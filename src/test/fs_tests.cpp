@@ -1,4 +1,4 @@
-// Copyright (c) 2011-present The Bitcoin Core developers
+// Copyright (c) 2011-present The Synorix Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 //
@@ -52,13 +52,13 @@ BOOST_AUTO_TEST_CASE(fsbridge_fstream)
     fs::path tmpfile2 = tmpfolder / fs::path(u8"fs_tests_₿_🏃");
     {
         std::ofstream file{tmpfile1.std_path()};
-        file << "bitcoin";
+        file << "synorix";
     }
     {
         std::ifstream file{tmpfile2.std_path()};
         std::string input_buffer;
         file >> input_buffer;
-        BOOST_CHECK_EQUAL(input_buffer, "bitcoin");
+        BOOST_CHECK_EQUAL(input_buffer, "synorix");
     }
     {
         std::ifstream file{tmpfile1.std_path(), std::ios_base::in | std::ios_base::ate};
@@ -74,17 +74,17 @@ BOOST_AUTO_TEST_CASE(fsbridge_fstream)
         std::ifstream file{tmpfile1.std_path()};
         std::string input_buffer;
         file >> input_buffer;
-        BOOST_CHECK_EQUAL(input_buffer, "bitcointests");
+        BOOST_CHECK_EQUAL(input_buffer, "synorixtests");
     }
     {
         std::ofstream file{tmpfile2.std_path(), std::ios_base::out | std::ios_base::trunc};
-        file << "bitcoin";
+        file << "synorix";
     }
     {
         std::ifstream file{tmpfile1.std_path()};
         std::string input_buffer;
         file >> input_buffer;
-        BOOST_CHECK_EQUAL(input_buffer, "bitcoin");
+        BOOST_CHECK_EQUAL(input_buffer, "synorix");
     }
     {
         // Join an absolute path and a relative path.

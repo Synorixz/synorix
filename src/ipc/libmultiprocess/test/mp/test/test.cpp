@@ -1,4 +1,4 @@
-// Copyright (c) The Bitcoin Core developers
+// Copyright (c) The Synorix Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -333,7 +333,7 @@ KJ_TEST("Calling IPC method, disconnecting and blocking during the call")
 
 KJ_TEST("Worker thread destroyed before it is initialized")
 {
-    // Regression test for bitcoin/bitcoin#34711, bitcoin/bitcoin#34756 where a
+    // Regression test for synorix/synorix#34711, synorix/synorix#34756 where a
     // worker thread is destroyed before it starts waiting for work.
     //
     // The test uses the `makethread` hook to trigger a disconnect as soon as
@@ -370,7 +370,7 @@ KJ_TEST("Worker thread destroyed before it is initialized")
 
 KJ_TEST("Calling async IPC method, with server disconnect racing the call")
 {
-    // Regression test for bitcoin/bitcoin#34777 heap-use-after-free where
+    // Regression test for synorix/synorix#34777 heap-use-after-free where
     // an async request is canceled before it starts to execute.
     //
     // Use testing_hook_async_request_start to trigger a disconnect from the
@@ -400,7 +400,7 @@ KJ_TEST("Calling async IPC method, with server disconnect racing the call")
 
 KJ_TEST("Calling async IPC method, with server disconnect after cleanup")
 {
-    // Regression test for bitcoin/bitcoin#34782 stack-use-after-return where
+    // Regression test for synorix/synorix#34782 stack-use-after-return where
     // an async request is canceled after it finishes executing but before the
     // response is sent.
     //

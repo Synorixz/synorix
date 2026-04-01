@@ -1,4 +1,4 @@
-// Copyright (c) 2025-present The Bitcoin Core developers
+// Copyright (c) 2025-present The Synorix Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or https://www.opensource.org/licenses/mit-license.php.
 
@@ -57,7 +57,7 @@ static void WalletEncrypt(benchmark::Bench& bench, unsigned int key_count)
     // This benchmark has a lot of overhead, this should be good enough to catch
     // any regressions, but for an accurate measurement of how long wallet
     // encryption takes, this should be reworked after something like
-    // https://github.com/bitcoin/bitcoin/pull/34208 is merged.
+    // https://github.com/synorix/synorix/pull/34208 is merged.
     bench.batch(key_count).unit("key").run([&] {
         wallet = TestLoadWallet(std::move(database), context);
 

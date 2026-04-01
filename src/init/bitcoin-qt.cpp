@@ -1,4 +1,4 @@
-// Copyright (c) 2021-present The Bitcoin Core developers
+// Copyright (c) 2021-present The Synorix Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -16,12 +16,12 @@
 
 namespace init {
 namespace {
-const char* EXE_NAME = "bitcoin-qt";
+const char* EXE_NAME = "synorix-qt";
 
-class BitcoinQtInit : public interfaces::Init
+class SynorixQtInit : public interfaces::Init
 {
 public:
-    BitcoinQtInit()
+    SynorixQtInit()
     {
         InitContext(m_node);
         m_node.init = this;
@@ -43,6 +43,6 @@ public:
 namespace interfaces {
 std::unique_ptr<Init> MakeGuiInit(int argc, char* argv[])
 {
-    return std::make_unique<init::BitcoinQtInit>();
+    return std::make_unique<init::SynorixQtInit>();
 }
 } // namespace interfaces

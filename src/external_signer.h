@@ -1,4 +1,4 @@
-// Copyright (c) 2018-present The Bitcoin Core developers
+// Copyright (c) 2018-present The Synorix Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -21,7 +21,7 @@ private:
     //! The command which handles interaction with the external signer.
     std::vector<std::string> m_command;
 
-    //! Bitcoin mainnet, testnet, etc
+    //! Synorix mainnet, testnet, etc
     std::string m_chain;
 
     std::vector<std::string> NetworkArg() const;

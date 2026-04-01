@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.22)
 project(minisketch
   VERSION 0.0.1
   DESCRIPTION "A library for BCH-based set reconciliation"
-  HOMEPAGE_URL "https://github.com/bitcoin-core/minisketch"
+  HOMEPAGE_URL "https://github.com/synorix-core/minisketch"
   LANGUAGES CXX
 )
 

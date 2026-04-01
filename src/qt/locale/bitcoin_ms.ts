@@ -54,8 +54,8 @@
         <translation type="unfinished">&amp;Pilih</translation>
     </message>
     <message>
-        <source>These are your Bitcoin addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
-        <translation type="unfinished">Ini adalah alamat Bitcoin anda untuk pembayaran. Periksa jumlah dan alamat penerima sebelum membuat penghantaran koin sentiasa.</translation>
+        <source>These are your Synorix addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
+        <translation type="unfinished">Ini adalah alamat Synorix anda untuk pembayaran. Periksa jumlah dan alamat penerima sebelum membuat penghantaran koin sentiasa.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>
@@ -205,7 +205,7 @@
     </message>
 </context>
 <context>
-    <name>BitcoinApplication</name>
+    <name>SynorixApplication</name>
     <message>
         <source>Settings file %1 might be corrupt or invalid.</source>
         <translation type="unfinished">Tetapan fail %1 mungkin rosak atau tidak sah.</translation>
@@ -266,7 +266,7 @@
     </message>
 </context>
 <context>
-    <name>BitcoinGUI</name>
+    <name>SynorixGUI</name>
     <message>
         <source>&amp;Overview</source>
         <translation type="unfinished">&amp;Gambaran Keseluruhan</translation>
@@ -325,8 +325,8 @@
         <translation type="unfinished">Aktiviti rangkaian dilumpuhkan</translation>
     </message>
     <message>
-        <source>Send coins to a Bitcoin address</source>
-        <translation type="unfinished">Menghantar koin kepada alamat Bitcoin</translation>
+        <source>Send coins to a Synorix address</source>
+        <translation type="unfinished">Menghantar koin kepada alamat Synorix</translation>
     </message>
     <message>
         <source>Backup wallet to another location</source>
@@ -349,12 +349,12 @@
         <translation type="unfinished">sulitkan kata laluan milik peribadi anda</translation>
     </message>
     <message>
-        <source>Sign messages with your Bitcoin addresses to prove you own them</source>
-        <translation type="unfinished">sahkan mesej bersama alamat bitcoin anda untuk menunjukkan alamat ini anda punya</translation>
+        <source>Sign messages with your Synorix addresses to prove you own them</source>
+        <translation type="unfinished">sahkan mesej bersama alamat synorix anda untuk menunjukkan alamat ini anda punya</translation>
     </message>
     <message>
-        <source>Verify messages to ensure they were signed with specified Bitcoin addresses</source>
-        <translation type="unfinished">Sahkan mesej untuk memastikan mereka telah ditandatangani dengan alamat Bitcoin yang ditentukan</translation>
+        <source>Verify messages to ensure they were signed with specified Synorix addresses</source>
+        <translation type="unfinished">Sahkan mesej untuk memastikan mereka telah ditandatangani dengan alamat Synorix yang ditentukan</translation>
     </message>
     <message>
         <source>&amp;File</source>
@@ -374,8 +374,8 @@
 </translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoin: URIs)</source>
-        <translation type="unfinished">Request payments (generates QR codes and bitcoin: URIs)
+        <source>Request payments (generates QR codes and synorix: URIs)</source>
+        <translation type="unfinished">Request payments (generates QR codes and synorix: URIs)
 </translation>
     </message>
     <message>
@@ -450,10 +450,10 @@
         <translation type="unfinished">&amp;Sorok</translation>
     </message>
     <message numerus="yes">
-        <source>%n active connection(s) to Bitcoin network.</source>
+        <source>%n active connection(s) to Synorix network.</source>
         <extracomment>A substring of the tooltip.</extracomment>
         <translation type="unfinished">
-            <numerusform>%nsambungan aktif ke rangkaian Bitcoin.</numerusform>
+            <numerusform>%nsambungan aktif ke rangkaian Synorix.</numerusform>
         </translation>
     </message>
     <message>
@@ -754,7 +754,7 @@ Jika dompet ini mengandungi sebarang skrip yang boleh diselesaikan tetapi tidak 
     </message>
     </context>
 <context>
-    <name>bitcoin-core</name>
+    <name>synorix-core</name>
     <message>
         <source>default wallet</source>
         <translation type="unfinished">dompet lalai

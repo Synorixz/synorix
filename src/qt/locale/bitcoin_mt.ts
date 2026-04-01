@@ -58,13 +58,13 @@
         <translation type="unfinished">A&amp;għżel</translation>
     </message>
     <message>
-        <source>These are your Bitcoin addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
-        <translation type="unfinished">Dawn huma l-indirizzi tal-Bitcoin tiegħek biex tibgħat il-ħlasijiet. Dejjem iċċekkja l-ammont u l-indirizz li tirċievi qabel ma tibgħat muniti.</translation>
+        <source>These are your Synorix addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
+        <translation type="unfinished">Dawn huma l-indirizzi tal-Synorix tiegħek biex tibgħat il-ħlasijiet. Dejjem iċċekkja l-ammont u l-indirizz li tirċievi qabel ma tibgħat muniti.</translation>
     </message>
     <message>
-        <source>These are your Bitcoin addresses for receiving payments. Use the 'Create new receiving address' button in the receive tab to create new addresses.
+        <source>These are your Synorix addresses for receiving payments. Use the 'Create new receiving address' button in the receive tab to create new addresses.
 Signing is only possible with addresses of the type 'legacy'.</source>
-        <translation type="unfinished">Dawn huma l-indirizzi Bitcoin tiegħek biex tirċievi ħlasijiet. Uża l-buttuna 'Oħloq indirizz riċevitur ġdid' fit-tab tar-riċeviment biex toħloq indirizzi ġodda.
+        <translation type="unfinished">Dawn huma l-indirizzi Synorix tiegħek biex tirċievi ħlasijiet. Uża l-buttuna 'Oħloq indirizz riċevitur ġdid' fit-tab tar-riċeviment biex toħloq indirizzi ġodda.
 L-iffirmar huwa possibbli biss b'indirizzi tat-tip 'legacy'.</translation>
     </message>
     <message>
@@ -192,8 +192,8 @@ L-iffirmar huwa possibbli biss b'indirizzi tat-tip 'legacy'.</translation>
         <translation type="unfinished">Mur Lura</translation>
     </message>
     <message>
-        <source>Remember that encrypting your wallet cannot fully protect your bitcoins from being stolen by malware infecting your computer.</source>
-        <translation type="unfinished">Ftakar li l-kriptaġġ tal-kartiera tiegħek ma jistax jipproteġi bis-sħiħ il-bitcoins tiegħek milli jinsterqu minn malware li jinfetta l-kompjuter tiegħek.</translation>
+        <source>Remember that encrypting your wallet cannot fully protect your synorixs from being stolen by malware infecting your computer.</source>
+        <translation type="unfinished">Ftakar li l-kriptaġġ tal-kartiera tiegħek ma jistax jipproteġi bis-sħiħ il-synorixs tiegħek milli jinsterqu minn malware li jinfetta l-kompjuter tiegħek.</translation>
     </message>
     <message>
         <source>Wallet to be encrypted</source>
@@ -260,7 +260,7 @@ L-iffirmar huwa possibbli biss b'indirizzi tat-tip 'legacy'.</translation>
     </message>
 </context>
 <context>
-    <name>BitcoinApplication</name>
+    <name>SynorixApplication</name>
     <message>
         <source>Settings file %1 might be corrupt or invalid.</source>
         <translation type="unfinished">Il-fajl tas-settings %1jista' jkun korrott jew invalidu.</translation>
@@ -397,7 +397,7 @@ L-iffirmar huwa possibbli biss b'indirizzi tat-tip 'legacy'.</translation>
     </message>
 </context>
 <context>
-    <name>BitcoinGUI</name>
+    <name>SynorixGUI</name>
     <message>
         <source>&amp;Overview</source>
         <translation type="unfinished">&amp;Ħarsa ġenerali</translation>
@@ -464,8 +464,8 @@ L-iffirmar huwa possibbli biss b'indirizzi tat-tip 'legacy'.</translation>
         <translation type="unfinished">Proxy huwa &lt;b&gt;attivat&lt;/b&gt;:%1</translation>
     </message>
     <message>
-        <source>Send coins to a Bitcoin address</source>
-        <translation type="unfinished">Ibgħat muniti f'indirizz Bitcoin</translation>
+        <source>Send coins to a Synorix address</source>
+        <translation type="unfinished">Ibgħat muniti f'indirizz Synorix</translation>
     </message>
     <message>
         <source>Backup wallet to another location</source>
@@ -508,16 +508,16 @@ L-iffirmar huwa possibbli biss b'indirizzi tat-tip 'legacy'.</translation>
         <translation type="unfinished">Iffirma &amp;messaġġ...</translation>
     </message>
     <message>
-        <source>Sign messages with your Bitcoin addresses to prove you own them</source>
-        <translation type="unfinished">Iffirma messaġġi bl-indirizzi Bitcoin tiegħek biex tipprova li inti stess</translation>
+        <source>Sign messages with your Synorix addresses to prove you own them</source>
+        <translation type="unfinished">Iffirma messaġġi bl-indirizzi Synorix tiegħek biex tipprova li inti stess</translation>
     </message>
     <message>
         <source>&amp;Verify message…</source>
         <translation type="unfinished">&amp;Ivverifika l-messaġġ...</translation>
     </message>
     <message>
-        <source>Verify messages to ensure they were signed with specified Bitcoin addresses</source>
-        <translation type="unfinished">Ivverifika l-messaġġi biex tiżgura li ġew iffirmati b'indirizzi Bitcoin speċifikati</translation>
+        <source>Verify messages to ensure they were signed with specified Synorix addresses</source>
+        <translation type="unfinished">Ivverifika l-messaġġi biex tiżgura li ġew iffirmati b'indirizzi Synorix speċifikati</translation>
     </message>
     <message>
         <source>&amp;Load PSBT from file…</source>
@@ -568,8 +568,8 @@ L-iffirmar huwa possibbli biss b'indirizzi tat-tip 'legacy'.</translation>
         <translation type="unfinished">Konnessjoni ma' sħabhom...</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoin: URIs)</source>
-        <translation type="unfinished">Itlob ħlasijiet (jiġġenera kodiċijiet QR u bitcoin: URIs)</translation>
+        <source>Request payments (generates QR codes and synorix: URIs)</source>
+        <translation type="unfinished">Itlob ħlasijiet (jiġġenera kodiċijiet QR u synorix: URIs)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -625,16 +625,16 @@ L-iffirmar huwa possibbli biss b'indirizzi tat-tip 'legacy'.</translation>
         <translation type="unfinished">Aġġornat</translation>
     </message>
     <message>
-        <source>Load Partially Signed Bitcoin Transaction</source>
-        <translation type="unfinished">Tagħbija Transazzjoni Bitcoin iffirmata parzjalment</translation>
+        <source>Load Partially Signed Synorix Transaction</source>
+        <translation type="unfinished">Tagħbija Transazzjoni Synorix iffirmata parzjalment</translation>
     </message>
     <message>
         <source>Load PSBT from &amp;clipboard…</source>
         <translation type="unfinished">Tagħbija PSBT minn &amp;clipboard...</translation>
     </message>
     <message>
-        <source>Load Partially Signed Bitcoin Transaction from clipboard</source>
-        <translation type="unfinished">Tagħbija Transazzjoni Bitcoin iffirmata parzjalment mill-clipboard</translation>
+        <source>Load Partially Signed Synorix Transaction from clipboard</source>
+        <translation type="unfinished">Tagħbija Transazzjoni Synorix iffirmata parzjalment mill-clipboard</translation>
     </message>
     <message>
         <source>Node window</source>
@@ -653,8 +653,8 @@ L-iffirmar huwa possibbli biss b'indirizzi tat-tip 'legacy'.</translation>
         <translation type="unfinished">&amp;Riċeviment indirizzi</translation>
     </message>
     <message>
-        <source>Open a bitcoin: URI</source>
-        <translation type="unfinished">Iftaħ bitcoin: URI</translation>
+        <source>Open a synorix: URI</source>
+        <translation type="unfinished">Iftaħ synorix: URI</translation>
     </message>
     <message>
         <source>Open Wallet</source>
@@ -691,8 +691,8 @@ L-iffirmar huwa possibbli biss b'indirizzi tat-tip 'legacy'.</translation>
         <translation type="unfinished">Emigra Kartiera</translation>
     </message>
     <message>
-        <source>Show the %1 help message to get a list with possible Bitcoin command-line options</source>
-        <translation type="unfinished">Uri %1l-messaġġ ta 'għajnuna biex tikseb lista b'għażliet possibbli tal-linja tal-kmand Bitcoin</translation>
+        <source>Show the %1 help message to get a list with possible Synorix command-line options</source>
+        <translation type="unfinished">Uri %1l-messaġġ ta 'għajnuna biex tikseb lista b'għażliet possibbli tal-linja tal-kmand Synorix</translation>
     </message>
     <message>
         <source>&amp;Mask values</source>
@@ -747,13 +747,13 @@ L-iffirmar huwa possibbli biss b'indirizzi tat-tip 'legacy'.</translation>
         <translation type="unfinished">Uri</translation>
     </message>
     <message numerus="yes">
-        <source>%n active connection(s) to Bitcoin network.</source>
+        <source>%n active connection(s) to Synorix network.</source>
         <extracomment>A substring of the tooltip.</extracomment>
         <translation type="unfinished">
-            <numerusform>%nkonnessjoni(jiet) attiva(i) man-netwerk Bitcoin.</numerusform>
-            <numerusform>%nkonnessjoni(jiet) attiva(i) man-netwerk Bitcoin.</numerusform>
-            <numerusform>%nkonnessjoni(jiet) attiva(i) man-netwerk Bitcoin.</numerusform>
-            <numerusform>%nkonnessjoni(jiet) attiva(i) man-netwerk Bitcoin.</numerusform>
+            <numerusform>%nkonnessjoni(jiet) attiva(i) man-netwerk Synorix.</numerusform>
+            <numerusform>%nkonnessjoni(jiet) attiva(i) man-netwerk Synorix.</numerusform>
+            <numerusform>%nkonnessjoni(jiet) attiva(i) man-netwerk Synorix.</numerusform>
+            <numerusform>%nkonnessjoni(jiet) attiva(i) man-netwerk Synorix.</numerusform>
         </translation>
     </message>
     <message>
@@ -1257,8 +1257,8 @@ L-iffirmar huwa possibbli biss b'indirizzi tat-tip 'legacy'.</translation>
         <translation type="unfinished">Aġġorna indirizz li tibgħat minnu</translation>
     </message>
     <message>
-        <source>The entered address "%1" is not a valid Bitcoin address.</source>
-        <translation type="unfinished">L-indirizz li ktibt "%1" mhuwiex indirizz validu tal-Bitcoin.</translation>
+        <source>The entered address "%1" is not a valid Synorix address.</source>
+        <translation type="unfinished">L-indirizz li ktibt "%1" mhuwiex indirizz validu tal-Synorix.</translation>
     </message>
     <message>
         <source>Address "%1" already exists as a receiving address with label "%2" and so cannot be added as a sending address.</source>
@@ -1436,8 +1436,8 @@ L-iffirmar huwa possibbli biss b'indirizzi tat-tip 'legacy'.</translation>
 <context>
     <name>OpenURIDialog</name>
     <message>
-        <source>Open bitcoin URI</source>
-        <translation type="unfinished">Iftaħ URI tal-bitcoin</translation>
+        <source>Open synorix URI</source>
+        <translation type="unfinished">Iftaħ URI tal-synorix</translation>
     </message>
     <message>
         <source>Paste address from clipboard</source>
@@ -2217,7 +2217,7 @@ L-iffirmar huwa possibbli biss b'indirizzi tat-tip 'legacy'.</translation>
     </message>
 </context>
 <context>
-    <name>bitcoin-core</name>
+    <name>synorix-core</name>
     <message>
         <source>default wallet</source>
         <translation type="unfinished">kartiera prestabbilita</translation>

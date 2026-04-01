@@ -1,17 +1,17 @@
-// Copyright (c) 2022-present The Bitcoin Core developers
+// Copyright (c) 2022-present The Synorix Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 //
-// The bitcoin-chainstate executable serves to surface the dependencies required
-// by a program wishing to use Bitcoin Core's consensus engine as it is right
+// The synorix-chainstate executable serves to surface the dependencies required
+// by a program wishing to use Synorix Core's consensus engine as it is right
 // now.
 //
 // DEVELOPER NOTE: Since this is a "demo-only", experimental, etc. executable,
-//                 it may diverge from Bitcoin Core's coding style.
+//                 it may diverge from Synorix Core's coding style.
 //
-// It is part of the libbitcoinkernel project.
+// It is part of the libsynorixkernel project.
 
-#include <kernel/bitcoinkernel_wrapper.h>
+#include <kernel/synorixkernel_wrapper.h>
 
 #include <cassert>
 #include <charconv>
@@ -22,7 +22,7 @@
 #include <string_view>
 #include <vector>
 
-using namespace btck;
+using namespace snrxk;
 
 std::vector<std::byte> hex_string_to_byte_vec(std::string_view hex)
 {
@@ -158,7 +158,7 @@ int main(int argc, char* argv[])
     std::filesystem::path abs_datadir{std::filesystem::absolute(argv[argc-1])};
     std::filesystem::create_directories(abs_datadir);
 
-    btck_LoggingOptions logging_options = {
+    snrxk_LoggingOptions logging_options = {
         .log_timestamps = true,
         .log_time_micros = false,
         .log_threadnames = false,

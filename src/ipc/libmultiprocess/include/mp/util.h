@@ -1,4 +1,4 @@
-// Copyright (c) The Bitcoin Core developers
+// Copyright (c) The Synorix Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -288,7 +288,7 @@ class CancelProbe;
 //!
 //! In the future, this could also be used to support a way for wrapped C++
 //! methods to detect cancellation (like approach #4 in
-//! https://github.com/bitcoin/bitcoin/issues/33575).
+//! https://github.com/synorix/synorix/issues/33575).
 class CancelMonitor
 {
 public:

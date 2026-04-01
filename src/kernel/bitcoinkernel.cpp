@@ -1,10 +1,10 @@
-// Copyright (c) 2022-present The Bitcoin Core developers
+// Copyright (c) 2022-present The Synorix Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #define BITCOINKERNEL_BUILD
 
-#include <kernel/bitcoinkernel.h>
+#include <kernel/synorixkernel.h>
 
 #include <chain.h>
 #include <coins.h>
@@ -53,11 +53,11 @@
 using kernel::ChainstateRole;
 using util::ImmediateTaskRunner;
 
-// Define G_TRANSLATION_FUN symbol in libbitcoinkernel library so users of the
+// Define G_TRANSLATION_FUN symbol in libsynorixkernel library so users of the
 // library aren't required to export this symbol
 extern const TranslateFn G_TRANSLATION_FUN{nullptr};
 
-static const kernel::Context btck_context_static{};
+static const kernel::Context snrxk_context_static{};
 
 namespace {
 
@@ -71,11 +71,11 @@ bool is_valid_flag_combination(script_verify_flags flags)
 class WriterStream
 {
 private:
-    btck_WriteBytes m_writer;
+    snrxk_WriteBytes m_writer;
     void* m_user_data;
 
 public:
-    WriterStream(btck_WriteBytes writer, void* user_data)
+    WriterStream(snrxk_WriteBytes writer, void* user_data)
         : m_writer{writer}, m_user_data{user_data} {}
 
     //
@@ -139,88 +139,88 @@ struct Handle {
 
 } // namespace
 
-struct btck_BlockTreeEntry: Handle<btck_BlockTreeEntry, CBlockIndex> {};
-struct btck_Block : Handle<btck_Block, std::shared_ptr<const CBlock>> {};
-struct btck_BlockValidationState : Handle<btck_BlockValidationState, BlockValidationState> {};
+struct snrxk_BlockTreeEntry: Handle<snrxk_BlockTreeEntry, CBlockIndex> {};
+struct snrxk_Block : Handle<snrxk_Block, std::shared_ptr<const CBlock>> {};
+struct snrxk_BlockValidationState : Handle<snrxk_BlockValidationState, BlockValidationState> {};
 
 namespace {
 
-BCLog::Level get_bclog_level(btck_LogLevel level)
+BCLog::Level get_bclog_level(snrxk_LogLevel level)
 {
     switch (level) {
-    case btck_LogLevel_INFO: {
+    case snrxk_LogLevel_INFO: {
         return BCLog::Level::Info;
     }
-    case btck_LogLevel_DEBUG: {
+    case snrxk_LogLevel_DEBUG: {
         return BCLog::Level::Debug;
     }
-    case btck_LogLevel_TRACE: {
+    case snrxk_LogLevel_TRACE: {
         return BCLog::Level::Trace;
     }
     }
     assert(false);
 }
 
-BCLog::LogFlags get_bclog_flag(btck_LogCategory category)
+BCLog::LogFlags get_bclog_flag(snrxk_LogCategory category)
 {
     switch (category) {
-    case btck_LogCategory_BENCH: {
+    case snrxk_LogCategory_BENCH: {
         return BCLog::LogFlags::BENCH;
     }
-    case btck_LogCategory_BLOCKSTORAGE: {
+    case snrxk_LogCategory_BLOCKSTORAGE: {
         return BCLog::LogFlags::BLOCKSTORAGE;
     }
-    case btck_LogCategory_COINDB: {
+    case snrxk_LogCategory_COINDB: {
         return BCLog::LogFlags::COINDB;
     }
-    case btck_LogCategory_LEVELDB: {
+    case snrxk_LogCategory_LEVELDB: {
         return BCLog::LogFlags::LEVELDB;
     }
-    case btck_LogCategory_MEMPOOL: {
+    case snrxk_LogCategory_MEMPOOL: {
         return BCLog::LogFlags::MEMPOOL;
     }
-    case btck_LogCategory_PRUNE: {
+    case snrxk_LogCategory_PRUNE: {
         return BCLog::LogFlags::PRUNE;
     }
-    case btck_LogCategory_RAND: {
+    case snrxk_LogCategory_RAND: {
         return BCLog::LogFlags::RAND;
     }
-    case btck_LogCategory_REINDEX: {
+    case snrxk_LogCategory_REINDEX: {
         return BCLog::LogFlags::REINDEX;
     }
-    case btck_LogCategory_VALIDATION: {
+    case snrxk_LogCategory_VALIDATION: {
         return BCLog::LogFlags::VALIDATION;
     }
-    case btck_LogCategory_KERNEL: {
+    case snrxk_LogCategory_KERNEL: {
         return BCLog::LogFlags::KERNEL;
     }
-    case btck_LogCategory_ALL: {
+    case snrxk_LogCategory_ALL: {
         return BCLog::LogFlags::ALL;
     }
     }
     assert(false);
 }
 
-btck_SynchronizationState cast_state(SynchronizationState state)
+snrxk_SynchronizationState cast_state(SynchronizationState state)
 {
     switch (state) {
     case SynchronizationState::INIT_REINDEX:
-        return btck_SynchronizationState_INIT_REINDEX;
+        return snrxk_SynchronizationState_INIT_REINDEX;
     case SynchronizationState::INIT_DOWNLOAD:
-        return btck_SynchronizationState_INIT_DOWNLOAD;
+        return snrxk_SynchronizationState_INIT_DOWNLOAD;
     case SynchronizationState::POST_INIT:
-        return btck_SynchronizationState_POST_INIT;
+        return snrxk_SynchronizationState_POST_INIT;
     } // no default case, so the compiler can warn about missing cases
     assert(false);
 }
 
-btck_Warning cast_btck_warning(kernel::Warning warning)
+snrxk_Warning cast_snrxk_warning(kernel::Warning warning)
 {
     switch (warning) {
     case kernel::Warning::UNKNOWN_NEW_RULES_ACTIVATED:
-        return btck_Warning_UNKNOWN_NEW_RULES_ACTIVATED;
+        return snrxk_Warning_UNKNOWN_NEW_RULES_ACTIVATED;
     case kernel::Warning::LARGE_WORK_INVALID_CHAIN:
-        return btck_Warning_LARGE_WORK_INVALID_CHAIN;
+        return snrxk_Warning_LARGE_WORK_INVALID_CHAIN;
     } // no default case, so the compiler can warn about missing cases
     assert(false);
 }
@@ -230,7 +230,7 @@ struct LoggingConnection {
     void* m_user_data;
     std::function<void(void* user_data)> m_deleter;
 
-    LoggingConnection(btck_LogCallback callback, void* user_data, btck_DestroyCallback user_data_destroy_callback)
+    LoggingConnection(snrxk_LogCallback callback, void* user_data, snrxk_DestroyCallback user_data_destroy_callback)
     {
         LOCK(cs_main);
 
@@ -276,10 +276,10 @@ struct LoggingConnection {
 class KernelNotifications final : public kernel::Notifications
 {
 private:
-    btck_NotificationInterfaceCallbacks m_cbs;
+    snrxk_NotificationInterfaceCallbacks m_cbs;
 
 public:
-    KernelNotifications(btck_NotificationInterfaceCallbacks cbs)
+    KernelNotifications(snrxk_NotificationInterfaceCallbacks cbs)
         : m_cbs{cbs}
     {
     }
@@ -295,7 +295,7 @@ public:
 
     kernel::InterruptResult blockTip(SynchronizationState state, const CBlockIndex& index, double verification_progress) override
     {
-        if (m_cbs.block_tip) m_cbs.block_tip(m_cbs.user_data, cast_state(state), btck_BlockTreeEntry::ref(&index), verification_progress);
+        if (m_cbs.block_tip) m_cbs.block_tip(m_cbs.user_data, cast_state(state), snrxk_BlockTreeEntry::ref(&index), verification_progress);
         return {};
     }
     void headerTip(SynchronizationState state, int64_t height, int64_t timestamp, bool presync) override
@@ -308,11 +308,11 @@ public:
     }
     void warningSet(kernel::Warning id, const bilingual_str& message) override
     {
-        if (m_cbs.warning_set) m_cbs.warning_set(m_cbs.user_data, cast_btck_warning(id), message.original.c_str(), message.original.length());
+        if (m_cbs.warning_set) m_cbs.warning_set(m_cbs.user_data, cast_snrxk_warning(id), message.original.c_str(), message.original.length());
     }
     void warningUnset(kernel::Warning id) override
     {
-        if (m_cbs.warning_unset) m_cbs.warning_unset(m_cbs.user_data, cast_btck_warning(id));
+        if (m_cbs.warning_unset) m_cbs.warning_unset(m_cbs.user_data, cast_snrxk_warning(id));
     }
     void flushError(const bilingual_str& message) override
     {
@@ -327,9 +327,9 @@ public:
 class KernelValidationInterface final : public CValidationInterface
 {
 public:
-    btck_ValidationInterfaceCallbacks m_cbs;
+    snrxk_ValidationInterfaceCallbacks m_cbs;
 
-    explicit KernelValidationInterface(const btck_ValidationInterfaceCallbacks vi_cbs) : m_cbs{vi_cbs} {}
+    explicit KernelValidationInterface(const snrxk_ValidationInterfaceCallbacks vi_cbs) : m_cbs{vi_cbs} {}
 
     ~KernelValidationInterface()
     {
@@ -345,8 +345,8 @@ protected:
     {
         if (m_cbs.block_checked) {
             m_cbs.block_checked(m_cbs.user_data,
-                                btck_Block::copy(btck_Block::ref(&block)),
-                                btck_BlockValidationState::ref(&stateIn));
+                                snrxk_Block::copy(snrxk_Block::ref(&block)),
+                                snrxk_BlockValidationState::ref(&stateIn));
         }
     }
 
@@ -354,8 +354,8 @@ protected:
     {
         if (m_cbs.pow_valid_block) {
             m_cbs.pow_valid_block(m_cbs.user_data,
-                                  btck_Block::copy(btck_Block::ref(&block)),
-                                  btck_BlockTreeEntry::ref(pindex));
+                                  snrxk_Block::copy(snrxk_Block::ref(&block)),
+                                  snrxk_BlockTreeEntry::ref(pindex));
         }
     }
 
@@ -363,8 +363,8 @@ protected:
     {
         if (m_cbs.block_connected) {
             m_cbs.block_connected(m_cbs.user_data,
-                                  btck_Block::copy(btck_Block::ref(&block)),
-                                  btck_BlockTreeEntry::ref(pindex));
+                                  snrxk_Block::copy(snrxk_Block::ref(&block)),
+                                  snrxk_BlockTreeEntry::ref(pindex));
         }
     }
 
@@ -372,8 +372,8 @@ protected:
     {
         if (m_cbs.block_disconnected) {
             m_cbs.block_disconnected(m_cbs.user_data,
-                                     btck_Block::copy(btck_Block::ref(&block)),
-                                     btck_BlockTreeEntry::ref(pindex));
+                                     snrxk_Block::copy(snrxk_Block::ref(&block)),
+                                     snrxk_BlockTreeEntry::ref(pindex));
         }
     }
 };
@@ -423,7 +423,7 @@ public:
             m_chainparams = CChainParams::Main();
         }
         if (!m_notifications) {
-            m_notifications = std::make_shared<KernelNotifications>(btck_NotificationInterfaceCallbacks{
+            m_notifications = std::make_shared<KernelNotifications>(snrxk_NotificationInterfaceCallbacks{
                 nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr});
         }
 
@@ -477,161 +477,161 @@ struct ChainMan {
 
 } // namespace
 
-struct btck_Transaction : Handle<btck_Transaction, std::shared_ptr<const CTransaction>> {};
-struct btck_TransactionOutput : Handle<btck_TransactionOutput, CTxOut> {};
-struct btck_ScriptPubkey : Handle<btck_ScriptPubkey, CScript> {};
-struct btck_LoggingConnection : Handle<btck_LoggingConnection, LoggingConnection> {};
-struct btck_ContextOptions : Handle<btck_ContextOptions, ContextOptions> {};
-struct btck_Context : Handle<btck_Context, std::shared_ptr<const Context>> {};
-struct btck_ChainParameters : Handle<btck_ChainParameters, CChainParams> {};
-struct btck_ChainstateManagerOptions : Handle<btck_ChainstateManagerOptions, ChainstateManagerOptions> {};
-struct btck_ChainstateManager : Handle<btck_ChainstateManager, ChainMan> {};
-struct btck_Chain : Handle<btck_Chain, CChain> {};
-struct btck_BlockSpentOutputs : Handle<btck_BlockSpentOutputs, std::shared_ptr<CBlockUndo>> {};
-struct btck_TransactionSpentOutputs : Handle<btck_TransactionSpentOutputs, CTxUndo> {};
-struct btck_Coin : Handle<btck_Coin, Coin> {};
-struct btck_BlockHash : Handle<btck_BlockHash, uint256> {};
-struct btck_TransactionInput : Handle<btck_TransactionInput, CTxIn> {};
-struct btck_TransactionOutPoint: Handle<btck_TransactionOutPoint, COutPoint> {};
-struct btck_Txid: Handle<btck_Txid, Txid> {};
-struct btck_PrecomputedTransactionData : Handle<btck_PrecomputedTransactionData, PrecomputedTransactionData> {};
-struct btck_BlockHeader: Handle<btck_BlockHeader, CBlockHeader> {};
+struct snrxk_Transaction : Handle<snrxk_Transaction, std::shared_ptr<const CTransaction>> {};
+struct snrxk_TransactionOutput : Handle<snrxk_TransactionOutput, CTxOut> {};
+struct snrxk_ScriptPubkey : Handle<snrxk_ScriptPubkey, CScript> {};
+struct snrxk_LoggingConnection : Handle<snrxk_LoggingConnection, LoggingConnection> {};
+struct snrxk_ContextOptions : Handle<snrxk_ContextOptions, ContextOptions> {};
+struct snrxk_Context : Handle<snrxk_Context, std::shared_ptr<const Context>> {};
+struct snrxk_ChainParameters : Handle<snrxk_ChainParameters, CChainParams> {};
+struct snrxk_ChainstateManagerOptions : Handle<snrxk_ChainstateManagerOptions, ChainstateManagerOptions> {};
+struct snrxk_ChainstateManager : Handle<snrxk_ChainstateManager, ChainMan> {};
+struct snrxk_Chain : Handle<snrxk_Chain, CChain> {};
+struct snrxk_BlockSpentOutputs : Handle<snrxk_BlockSpentOutputs, std::shared_ptr<CBlockUndo>> {};
+struct snrxk_TransactionSpentOutputs : Handle<snrxk_TransactionSpentOutputs, CTxUndo> {};
+struct snrxk_Coin : Handle<snrxk_Coin, Coin> {};
+struct snrxk_BlockHash : Handle<snrxk_BlockHash, uint256> {};
+struct snrxk_TransactionInput : Handle<snrxk_TransactionInput, CTxIn> {};
+struct snrxk_TransactionOutPoint: Handle<snrxk_TransactionOutPoint, COutPoint> {};
+struct snrxk_Txid: Handle<snrxk_Txid, Txid> {};
+struct snrxk_PrecomputedTransactionData : Handle<snrxk_PrecomputedTransactionData, PrecomputedTransactionData> {};
+struct snrxk_BlockHeader: Handle<snrxk_BlockHeader, CBlockHeader> {};
 
-btck_Transaction* btck_transaction_create(const void* raw_transaction, size_t raw_transaction_len)
+snrxk_Transaction* snrxk_transaction_create(const void* raw_transaction, size_t raw_transaction_len)
 {
     if (raw_transaction == nullptr && raw_transaction_len != 0) {
         return nullptr;
     }
     try {
         SpanReader stream{std::span{reinterpret_cast<const std::byte*>(raw_transaction), raw_transaction_len}};
-        return btck_Transaction::create(std::make_shared<const CTransaction>(deserialize, TX_WITH_WITNESS, stream));
+        return snrxk_Transaction::create(std::make_shared<const CTransaction>(deserialize, TX_WITH_WITNESS, stream));
     } catch (...) {
         return nullptr;
     }
 }
 
-size_t btck_transaction_count_outputs(const btck_Transaction* transaction)
+size_t snrxk_transaction_count_outputs(const snrxk_Transaction* transaction)
 {
-    return btck_Transaction::get(transaction)->vout.size();
+    return snrxk_Transaction::get(transaction)->vout.size();
 }
 
-const btck_TransactionOutput* btck_transaction_get_output_at(const btck_Transaction* transaction, size_t output_index)
+const snrxk_TransactionOutput* snrxk_transaction_get_output_at(const snrxk_Transaction* transaction, size_t output_index)
 {
-    const CTransaction& tx = *btck_Transaction::get(transaction);
+    const CTransaction& tx = *snrxk_Transaction::get(transaction);
     assert(output_index < tx.vout.size());
-    return btck_TransactionOutput::ref(&tx.vout[output_index]);
+    return snrxk_TransactionOutput::ref(&tx.vout[output_index]);
 }
 
-size_t btck_transaction_count_inputs(const btck_Transaction* transaction)
+size_t snrxk_transaction_count_inputs(const snrxk_Transaction* transaction)
 {
-    return btck_Transaction::get(transaction)->vin.size();
+    return snrxk_Transaction::get(transaction)->vin.size();
 }
 
-const btck_TransactionInput* btck_transaction_get_input_at(const btck_Transaction* transaction, size_t input_index)
+const snrxk_TransactionInput* snrxk_transaction_get_input_at(const snrxk_Transaction* transaction, size_t input_index)
 {
-    assert(input_index < btck_Transaction::get(transaction)->vin.size());
-    return btck_TransactionInput::ref(&btck_Transaction::get(transaction)->vin[input_index]);
+    assert(input_index < snrxk_Transaction::get(transaction)->vin.size());
+    return snrxk_TransactionInput::ref(&snrxk_Transaction::get(transaction)->vin[input_index]);
 }
 
-uint32_t btck_transaction_get_locktime(const btck_Transaction* transaction)
+uint32_t snrxk_transaction_get_locktime(const snrxk_Transaction* transaction)
 {
-    return btck_Transaction::get(transaction)->nLockTime;
+    return snrxk_Transaction::get(transaction)->nLockTime;
 }
 
-const btck_Txid* btck_transaction_get_txid(const btck_Transaction* transaction)
+const snrxk_Txid* snrxk_transaction_get_txid(const snrxk_Transaction* transaction)
 {
-    return btck_Txid::ref(&btck_Transaction::get(transaction)->GetHash());
+    return snrxk_Txid::ref(&snrxk_Transaction::get(transaction)->GetHash());
 }
 
-btck_Transaction* btck_transaction_copy(const btck_Transaction* transaction)
+snrxk_Transaction* snrxk_transaction_copy(const snrxk_Transaction* transaction)
 {
-    return btck_Transaction::copy(transaction);
+    return snrxk_Transaction::copy(transaction);
 }
 
-int btck_transaction_to_bytes(const btck_Transaction* transaction, btck_WriteBytes writer, void* user_data)
+int snrxk_transaction_to_bytes(const snrxk_Transaction* transaction, snrxk_WriteBytes writer, void* user_data)
 {
     try {
         WriterStream ws{writer, user_data};
-        ws << TX_WITH_WITNESS(btck_Transaction::get(transaction));
+        ws << TX_WITH_WITNESS(snrxk_Transaction::get(transaction));
         return 0;
     } catch (...) {
         return -1;
     }
 }
 
-void btck_transaction_destroy(btck_Transaction* transaction)
+void snrxk_transaction_destroy(snrxk_Transaction* transaction)
 {
     delete transaction;
 }
 
-btck_ScriptPubkey* btck_script_pubkey_create(const void* script_pubkey, size_t script_pubkey_len)
+snrxk_ScriptPubkey* snrxk_script_pubkey_create(const void* script_pubkey, size_t script_pubkey_len)
 {
     if (script_pubkey == nullptr && script_pubkey_len != 0) {
         return nullptr;
     }
     auto data = std::span{reinterpret_cast<const uint8_t*>(script_pubkey), script_pubkey_len};
-    return btck_ScriptPubkey::create(data.begin(), data.end());
+    return snrxk_ScriptPubkey::create(data.begin(), data.end());
 }
 
-int btck_script_pubkey_to_bytes(const btck_ScriptPubkey* script_pubkey_, btck_WriteBytes writer, void* user_data)
+int snrxk_script_pubkey_to_bytes(const snrxk_ScriptPubkey* script_pubkey_, snrxk_WriteBytes writer, void* user_data)
 {
-    const auto& script_pubkey{btck_ScriptPubkey::get(script_pubkey_)};
+    const auto& script_pubkey{snrxk_ScriptPubkey::get(script_pubkey_)};
     return writer(script_pubkey.data(), script_pubkey.size(), user_data);
 }
 
-btck_ScriptPubkey* btck_script_pubkey_copy(const btck_ScriptPubkey* script_pubkey)
+snrxk_ScriptPubkey* snrxk_script_pubkey_copy(const snrxk_ScriptPubkey* script_pubkey)
 {
-    return btck_ScriptPubkey::copy(script_pubkey);
+    return snrxk_ScriptPubkey::copy(script_pubkey);
 }
 
-void btck_script_pubkey_destroy(btck_ScriptPubkey* script_pubkey)
+void snrxk_script_pubkey_destroy(snrxk_ScriptPubkey* script_pubkey)
 {
     delete script_pubkey;
 }
 
-btck_TransactionOutput* btck_transaction_output_create(const btck_ScriptPubkey* script_pubkey, int64_t amount)
+snrxk_TransactionOutput* snrxk_transaction_output_create(const snrxk_ScriptPubkey* script_pubkey, int64_t amount)
 {
-    return btck_TransactionOutput::create(amount, btck_ScriptPubkey::get(script_pubkey));
+    return snrxk_TransactionOutput::create(amount, snrxk_ScriptPubkey::get(script_pubkey));
 }
 
-btck_TransactionOutput* btck_transaction_output_copy(const btck_TransactionOutput* output)
+snrxk_TransactionOutput* snrxk_transaction_output_copy(const snrxk_TransactionOutput* output)
 {
-    return btck_TransactionOutput::copy(output);
+    return snrxk_TransactionOutput::copy(output);
 }
 
-const btck_ScriptPubkey* btck_transaction_output_get_script_pubkey(const btck_TransactionOutput* output)
+const snrxk_ScriptPubkey* snrxk_transaction_output_get_script_pubkey(const snrxk_TransactionOutput* output)
 {
-    return btck_ScriptPubkey::ref(&btck_TransactionOutput::get(output).scriptPubKey);
+    return snrxk_ScriptPubkey::ref(&snrxk_TransactionOutput::get(output).scriptPubKey);
 }
 
-int64_t btck_transaction_output_get_amount(const btck_TransactionOutput* output)
+int64_t snrxk_transaction_output_get_amount(const snrxk_TransactionOutput* output)
 {
-    return btck_TransactionOutput::get(output).nValue;
+    return snrxk_TransactionOutput::get(output).nValue;
 }
 
-void btck_transaction_output_destroy(btck_TransactionOutput* output)
+void snrxk_transaction_output_destroy(snrxk_TransactionOutput* output)
 {
     delete output;
 }
 
-btck_PrecomputedTransactionData* btck_precomputed_transaction_data_create(
-    const btck_Transaction* tx_to,
-    const btck_TransactionOutput** spent_outputs_, size_t spent_outputs_len)
+snrxk_PrecomputedTransactionData* snrxk_precomputed_transaction_data_create(
+    const snrxk_Transaction* tx_to,
+    const snrxk_TransactionOutput** spent_outputs_, size_t spent_outputs_len)
 {
     try {
-        const CTransaction& tx{*btck_Transaction::get(tx_to)};
-        auto txdata{btck_PrecomputedTransactionData::create()};
+        const CTransaction& tx{*snrxk_Transaction::get(tx_to)};
+        auto txdata{snrxk_PrecomputedTransactionData::create()};
         if (spent_outputs_ != nullptr && spent_outputs_len > 0) {
             assert(spent_outputs_len == tx.vin.size());
             std::vector<CTxOut> spent_outputs;
             spent_outputs.reserve(spent_outputs_len);
             for (size_t i = 0; i < spent_outputs_len; i++) {
-                const CTxOut& tx_out{btck_TransactionOutput::get(spent_outputs_[i])};
+                const CTxOut& tx_out{snrxk_TransactionOutput::get(spent_outputs_[i])};
                 spent_outputs.push_back(tx_out);
             }
-            btck_PrecomputedTransactionData::get(txdata).Init(tx, std::move(spent_outputs));
+            snrxk_PrecomputedTransactionData::get(txdata).Init(tx, std::move(spent_outputs));
         } else {
-            btck_PrecomputedTransactionData::get(txdata).Init(tx, {});
+            snrxk_PrecomputedTransactionData::get(txdata).Init(tx, {});
         }
 
         return txdata;
@@ -640,46 +640,46 @@ btck_PrecomputedTransactionData* btck_precomputed_transaction_data_create(
     }
 }
 
-btck_PrecomputedTransactionData* btck_precomputed_transaction_data_copy(const btck_PrecomputedTransactionData* precomputed_txdata)
+snrxk_PrecomputedTransactionData* snrxk_precomputed_transaction_data_copy(const snrxk_PrecomputedTransactionData* precomputed_txdata)
 {
-    return btck_PrecomputedTransactionData::copy(precomputed_txdata);
+    return snrxk_PrecomputedTransactionData::copy(precomputed_txdata);
 }
 
-void btck_precomputed_transaction_data_destroy(btck_PrecomputedTransactionData* precomputed_txdata)
+void snrxk_precomputed_transaction_data_destroy(snrxk_PrecomputedTransactionData* precomputed_txdata)
 {
     delete precomputed_txdata;
 }
 
-int btck_script_pubkey_verify(const btck_ScriptPubkey* script_pubkey,
+int snrxk_script_pubkey_verify(const snrxk_ScriptPubkey* script_pubkey,
                               const int64_t amount,
-                              const btck_Transaction* tx_to,
-                              const btck_PrecomputedTransactionData* precomputed_txdata,
+                              const snrxk_Transaction* tx_to,
+                              const snrxk_PrecomputedTransactionData* precomputed_txdata,
                               const unsigned int input_index,
-                              const btck_ScriptVerificationFlags flags,
-                              btck_ScriptVerifyStatus* status)
+                              const snrxk_ScriptVerificationFlags flags,
+                              snrxk_ScriptVerifyStatus* status)
 {
     // Assert that all specified flags are part of the interface before continuing
-    assert((flags & ~btck_ScriptVerificationFlags_ALL) == 0);
+    assert((flags & ~snrxk_ScriptVerificationFlags_ALL) == 0);
 
     if (!is_valid_flag_combination(script_verify_flags::from_int(flags))) {
-        if (status) *status = btck_ScriptVerifyStatus_ERROR_INVALID_FLAGS_COMBINATION;
+        if (status) *status = snrxk_ScriptVerifyStatus_ERROR_INVALID_FLAGS_COMBINATION;
         return 0;
     }
 
-    const CTransaction& tx{*btck_Transaction::get(tx_to)};
+    const CTransaction& tx{*snrxk_Transaction::get(tx_to)};
     assert(input_index < tx.vin.size());
 
-    const PrecomputedTransactionData& txdata{precomputed_txdata ? btck_PrecomputedTransactionData::get(precomputed_txdata) : PrecomputedTransactionData(tx)};
+    const PrecomputedTransactionData& txdata{precomputed_txdata ? snrxk_PrecomputedTransactionData::get(precomputed_txdata) : PrecomputedTransactionData(tx)};
 
-    if (flags & btck_ScriptVerificationFlags_TAPROOT && txdata.m_spent_outputs.empty()) {
-        if (status) *status = btck_ScriptVerifyStatus_ERROR_SPENT_OUTPUTS_REQUIRED;
+    if (flags & snrxk_ScriptVerificationFlags_TAPROOT && txdata.m_spent_outputs.empty()) {
+        if (status) *status = snrxk_ScriptVerifyStatus_ERROR_SPENT_OUTPUTS_REQUIRED;
         return 0;
     }
 
-    if (status) *status = btck_ScriptVerifyStatus_OK;
+    if (status) *status = snrxk_ScriptVerifyStatus_OK;
 
     bool result = VerifyScript(tx.vin[input_index].scriptSig,
-                               btck_ScriptPubkey::get(script_pubkey),
+                               snrxk_ScriptPubkey::get(script_pubkey),
                                &tx.vin[input_index].scriptWitness,
                                script_verify_flags::from_int(flags),
                                TransactionSignatureChecker(&tx, input_index, amount, txdata, MissingDataBehavior::FAIL),
@@ -687,67 +687,67 @@ int btck_script_pubkey_verify(const btck_ScriptPubkey* script_pubkey,
     return result ? 1 : 0;
 }
 
-btck_TransactionInput* btck_transaction_input_copy(const btck_TransactionInput* input)
+snrxk_TransactionInput* snrxk_transaction_input_copy(const snrxk_TransactionInput* input)
 {
-    return btck_TransactionInput::copy(input);
+    return snrxk_TransactionInput::copy(input);
 }
 
-const btck_TransactionOutPoint* btck_transaction_input_get_out_point(const btck_TransactionInput* input)
+const snrxk_TransactionOutPoint* snrxk_transaction_input_get_out_point(const snrxk_TransactionInput* input)
 {
-    return btck_TransactionOutPoint::ref(&btck_TransactionInput::get(input).prevout);
+    return snrxk_TransactionOutPoint::ref(&snrxk_TransactionInput::get(input).prevout);
 }
 
-uint32_t btck_transaction_input_get_sequence(const btck_TransactionInput* input)
+uint32_t snrxk_transaction_input_get_sequence(const snrxk_TransactionInput* input)
 {
-    return btck_TransactionInput::get(input).nSequence;
+    return snrxk_TransactionInput::get(input).nSequence;
 }
 
-void btck_transaction_input_destroy(btck_TransactionInput* input)
+void snrxk_transaction_input_destroy(snrxk_TransactionInput* input)
 {
     delete input;
 }
 
-btck_TransactionOutPoint* btck_transaction_out_point_copy(const btck_TransactionOutPoint* out_point)
+snrxk_TransactionOutPoint* snrxk_transaction_out_point_copy(const snrxk_TransactionOutPoint* out_point)
 {
-    return btck_TransactionOutPoint::copy(out_point);
+    return snrxk_TransactionOutPoint::copy(out_point);
 }
 
-uint32_t btck_transaction_out_point_get_index(const btck_TransactionOutPoint* out_point)
+uint32_t snrxk_transaction_out_point_get_index(const snrxk_TransactionOutPoint* out_point)
 {
-    return btck_TransactionOutPoint::get(out_point).n;
+    return snrxk_TransactionOutPoint::get(out_point).n;
 }
 
-const btck_Txid* btck_transaction_out_point_get_txid(const btck_TransactionOutPoint* out_point)
+const snrxk_Txid* snrxk_transaction_out_point_get_txid(const snrxk_TransactionOutPoint* out_point)
 {
-    return btck_Txid::ref(&btck_TransactionOutPoint::get(out_point).hash);
+    return snrxk_Txid::ref(&snrxk_TransactionOutPoint::get(out_point).hash);
 }
 
-void btck_transaction_out_point_destroy(btck_TransactionOutPoint* out_point)
+void snrxk_transaction_out_point_destroy(snrxk_TransactionOutPoint* out_point)
 {
     delete out_point;
 }
 
-btck_Txid* btck_txid_copy(const btck_Txid* txid)
+snrxk_Txid* snrxk_txid_copy(const snrxk_Txid* txid)
 {
-    return btck_Txid::copy(txid);
+    return snrxk_Txid::copy(txid);
 }
 
-void btck_txid_to_bytes(const btck_Txid* txid, unsigned char output[32])
+void snrxk_txid_to_bytes(const snrxk_Txid* txid, unsigned char output[32])
 {
-    std::memcpy(output, btck_Txid::get(txid).begin(), 32);
+    std::memcpy(output, snrxk_Txid::get(txid).begin(), 32);
 }
 
-int btck_txid_equals(const btck_Txid* txid1, const btck_Txid* txid2)
+int snrxk_txid_equals(const snrxk_Txid* txid1, const snrxk_Txid* txid2)
 {
-    return btck_Txid::get(txid1) == btck_Txid::get(txid2);
+    return snrxk_Txid::get(txid1) == snrxk_Txid::get(txid2);
 }
 
-void btck_txid_destroy(btck_Txid* txid)
+void snrxk_txid_destroy(snrxk_Txid* txid)
 {
     delete txid;
 }
 
-void btck_logging_set_options(const btck_LoggingOptions options)
+void snrxk_logging_set_options(const snrxk_LoggingOptions options)
 {
     LOCK(cs_main);
     LogInstance().m_log_timestamps = options.log_timestamps;
@@ -757,194 +757,194 @@ void btck_logging_set_options(const btck_LoggingOptions options)
     LogInstance().m_always_print_category_level = options.always_print_category_levels;
 }
 
-void btck_logging_set_level_category(btck_LogCategory category, btck_LogLevel level)
+void snrxk_logging_set_level_category(snrxk_LogCategory category, snrxk_LogLevel level)
 {
     LOCK(cs_main);
-    if (category == btck_LogCategory_ALL) {
+    if (category == snrxk_LogCategory_ALL) {
         LogInstance().SetLogLevel(get_bclog_level(level));
     }
 
     LogInstance().AddCategoryLogLevel(get_bclog_flag(category), get_bclog_level(level));
 }
 
-void btck_logging_enable_category(btck_LogCategory category)
+void snrxk_logging_enable_category(snrxk_LogCategory category)
 {
     LogInstance().EnableCategory(get_bclog_flag(category));
 }
 
-void btck_logging_disable_category(btck_LogCategory category)
+void snrxk_logging_disable_category(snrxk_LogCategory category)
 {
     LogInstance().DisableCategory(get_bclog_flag(category));
 }
 
-void btck_logging_disable()
+void snrxk_logging_disable()
 {
     LogInstance().DisableLogging();
 }
 
-btck_LoggingConnection* btck_logging_connection_create(btck_LogCallback callback, void* user_data, btck_DestroyCallback user_data_destroy_callback)
+snrxk_LoggingConnection* snrxk_logging_connection_create(snrxk_LogCallback callback, void* user_data, snrxk_DestroyCallback user_data_destroy_callback)
 {
     try {
-        return btck_LoggingConnection::create(callback, user_data, user_data_destroy_callback);
+        return snrxk_LoggingConnection::create(callback, user_data, user_data_destroy_callback);
     } catch (const std::exception&) {
         return nullptr;
     }
 }
 
-void btck_logging_connection_destroy(btck_LoggingConnection* connection)
+void snrxk_logging_connection_destroy(snrxk_LoggingConnection* connection)
 {
     delete connection;
 }
 
-btck_ChainParameters* btck_chain_parameters_create(const btck_ChainType chain_type)
+snrxk_ChainParameters* snrxk_chain_parameters_create(const snrxk_ChainType chain_type)
 {
     switch (chain_type) {
-    case btck_ChainType_MAINNET: {
-        return btck_ChainParameters::ref(const_cast<CChainParams*>(CChainParams::Main().release()));
+    case snrxk_ChainType_MAINNET: {
+        return snrxk_ChainParameters::ref(const_cast<CChainParams*>(CChainParams::Main().release()));
     }
-    case btck_ChainType_TESTNET: {
-        return btck_ChainParameters::ref(const_cast<CChainParams*>(CChainParams::TestNet().release()));
+    case snrxk_ChainType_TESTNET: {
+        return snrxk_ChainParameters::ref(const_cast<CChainParams*>(CChainParams::TestNet().release()));
     }
-    case btck_ChainType_TESTNET_4: {
-        return btck_ChainParameters::ref(const_cast<CChainParams*>(CChainParams::TestNet4().release()));
+    case snrxk_ChainType_TESTNET_4: {
+        return snrxk_ChainParameters::ref(const_cast<CChainParams*>(CChainParams::TestNet4().release()));
     }
-    case btck_ChainType_SIGNET: {
-        return btck_ChainParameters::ref(const_cast<CChainParams*>(CChainParams::SigNet({}).release()));
+    case snrxk_ChainType_SIGNET: {
+        return snrxk_ChainParameters::ref(const_cast<CChainParams*>(CChainParams::SigNet({}).release()));
     }
-    case btck_ChainType_REGTEST: {
-        return btck_ChainParameters::ref(const_cast<CChainParams*>(CChainParams::RegTest({}).release()));
+    case snrxk_ChainType_REGTEST: {
+        return snrxk_ChainParameters::ref(const_cast<CChainParams*>(CChainParams::RegTest({}).release()));
     }
     }
     assert(false);
 }
 
-btck_ChainParameters* btck_chain_parameters_copy(const btck_ChainParameters* chain_parameters)
+snrxk_ChainParameters* snrxk_chain_parameters_copy(const snrxk_ChainParameters* chain_parameters)
 {
-    return btck_ChainParameters::copy(chain_parameters);
+    return snrxk_ChainParameters::copy(chain_parameters);
 }
 
-void btck_chain_parameters_destroy(btck_ChainParameters* chain_parameters)
+void snrxk_chain_parameters_destroy(snrxk_ChainParameters* chain_parameters)
 {
     delete chain_parameters;
 }
 
-btck_ContextOptions* btck_context_options_create()
+snrxk_ContextOptions* snrxk_context_options_create()
 {
-    return btck_ContextOptions::create();
+    return snrxk_ContextOptions::create();
 }
 
-void btck_context_options_set_chainparams(btck_ContextOptions* options, const btck_ChainParameters* chain_parameters)
+void snrxk_context_options_set_chainparams(snrxk_ContextOptions* options, const snrxk_ChainParameters* chain_parameters)
 {
     // Copy the chainparams, so the caller can free it again
-    LOCK(btck_ContextOptions::get(options).m_mutex);
-    btck_ContextOptions::get(options).m_chainparams = std::make_unique<const CChainParams>(btck_ChainParameters::get(chain_parameters));
+    LOCK(snrxk_ContextOptions::get(options).m_mutex);
+    snrxk_ContextOptions::get(options).m_chainparams = std::make_unique<const CChainParams>(snrxk_ChainParameters::get(chain_parameters));
 }
 
-void btck_context_options_set_notifications(btck_ContextOptions* options, btck_NotificationInterfaceCallbacks notifications)
+void snrxk_context_options_set_notifications(snrxk_ContextOptions* options, snrxk_NotificationInterfaceCallbacks notifications)
 {
     // The KernelNotifications are copy-initialized, so the caller can free them again.
-    LOCK(btck_ContextOptions::get(options).m_mutex);
-    btck_ContextOptions::get(options).m_notifications = std::make_shared<KernelNotifications>(notifications);
+    LOCK(snrxk_ContextOptions::get(options).m_mutex);
+    snrxk_ContextOptions::get(options).m_notifications = std::make_shared<KernelNotifications>(notifications);
 }
 
-void btck_context_options_set_validation_interface(btck_ContextOptions* options, btck_ValidationInterfaceCallbacks vi_cbs)
+void snrxk_context_options_set_validation_interface(snrxk_ContextOptions* options, snrxk_ValidationInterfaceCallbacks vi_cbs)
 {
-    LOCK(btck_ContextOptions::get(options).m_mutex);
-    btck_ContextOptions::get(options).m_validation_interface = std::make_shared<KernelValidationInterface>(vi_cbs);
+    LOCK(snrxk_ContextOptions::get(options).m_mutex);
+    snrxk_ContextOptions::get(options).m_validation_interface = std::make_shared<KernelValidationInterface>(vi_cbs);
 }
 
-void btck_context_options_destroy(btck_ContextOptions* options)
+void snrxk_context_options_destroy(snrxk_ContextOptions* options)
 {
     delete options;
 }
 
-btck_Context* btck_context_create(const btck_ContextOptions* options)
+snrxk_Context* snrxk_context_create(const snrxk_ContextOptions* options)
 {
     bool sane{true};
-    const ContextOptions* opts = options ? &btck_ContextOptions::get(options) : nullptr;
+    const ContextOptions* opts = options ? &snrxk_ContextOptions::get(options) : nullptr;
     auto context{std::make_shared<const Context>(opts, sane)};
     if (!sane) {
         LogError("Kernel context sanity check failed.");
         return nullptr;
     }
-    return btck_Context::create(context);
+    return snrxk_Context::create(context);
 }
 
-btck_Context* btck_context_copy(const btck_Context* context)
+snrxk_Context* snrxk_context_copy(const snrxk_Context* context)
 {
-    return btck_Context::copy(context);
+    return snrxk_Context::copy(context);
 }
 
-int btck_context_interrupt(btck_Context* context)
+int snrxk_context_interrupt(snrxk_Context* context)
 {
-    return (*btck_Context::get(context)->m_interrupt)() ? 0 : -1;
+    return (*snrxk_Context::get(context)->m_interrupt)() ? 0 : -1;
 }
 
-void btck_context_destroy(btck_Context* context)
+void snrxk_context_destroy(snrxk_Context* context)
 {
     delete context;
 }
 
-const btck_BlockTreeEntry* btck_block_tree_entry_get_previous(const btck_BlockTreeEntry* entry)
+const snrxk_BlockTreeEntry* snrxk_block_tree_entry_get_previous(const snrxk_BlockTreeEntry* entry)
 {
-    if (!btck_BlockTreeEntry::get(entry).pprev) {
+    if (!snrxk_BlockTreeEntry::get(entry).pprev) {
         LogInfo("Genesis block has no previous.");
         return nullptr;
     }
 
-    return btck_BlockTreeEntry::ref(btck_BlockTreeEntry::get(entry).pprev);
+    return snrxk_BlockTreeEntry::ref(snrxk_BlockTreeEntry::get(entry).pprev);
 }
 
-btck_BlockValidationState* btck_block_validation_state_create()
+snrxk_BlockValidationState* snrxk_block_validation_state_create()
 {
-    return btck_BlockValidationState::create();
+    return snrxk_BlockValidationState::create();
 }
 
-btck_BlockValidationState* btck_block_validation_state_copy(const btck_BlockValidationState* state)
+snrxk_BlockValidationState* snrxk_block_validation_state_copy(const snrxk_BlockValidationState* state)
 {
-    return btck_BlockValidationState::copy(state);
+    return snrxk_BlockValidationState::copy(state);
 }
 
-void btck_block_validation_state_destroy(btck_BlockValidationState* state)
+void snrxk_block_validation_state_destroy(snrxk_BlockValidationState* state)
 {
     delete state;
 }
 
-btck_ValidationMode btck_block_validation_state_get_validation_mode(const btck_BlockValidationState* block_validation_state_)
+snrxk_ValidationMode snrxk_block_validation_state_get_validation_mode(const snrxk_BlockValidationState* block_validation_state_)
 {
-    auto& block_validation_state = btck_BlockValidationState::get(block_validation_state_);
-    if (block_validation_state.IsValid()) return btck_ValidationMode_VALID;
-    if (block_validation_state.IsInvalid()) return btck_ValidationMode_INVALID;
-    return btck_ValidationMode_INTERNAL_ERROR;
+    auto& block_validation_state = snrxk_BlockValidationState::get(block_validation_state_);
+    if (block_validation_state.IsValid()) return snrxk_ValidationMode_VALID;
+    if (block_validation_state.IsInvalid()) return snrxk_ValidationMode_INVALID;
+    return snrxk_ValidationMode_INTERNAL_ERROR;
 }
 
-btck_BlockValidationResult btck_block_validation_state_get_block_validation_result(const btck_BlockValidationState* block_validation_state_)
+snrxk_BlockValidationResult snrxk_block_validation_state_get_block_validation_result(const snrxk_BlockValidationState* block_validation_state_)
 {
-    auto& block_validation_state = btck_BlockValidationState::get(block_validation_state_);
+    auto& block_validation_state = snrxk_BlockValidationState::get(block_validation_state_);
     switch (block_validation_state.GetResult()) {
     case BlockValidationResult::BLOCK_RESULT_UNSET:
-        return btck_BlockValidationResult_UNSET;
+        return snrxk_BlockValidationResult_UNSET;
     case BlockValidationResult::BLOCK_CONSENSUS:
-        return btck_BlockValidationResult_CONSENSUS;
+        return snrxk_BlockValidationResult_CONSENSUS;
     case BlockValidationResult::BLOCK_CACHED_INVALID:
-        return btck_BlockValidationResult_CACHED_INVALID;
+        return snrxk_BlockValidationResult_CACHED_INVALID;
     case BlockValidationResult::BLOCK_INVALID_HEADER:
-        return btck_BlockValidationResult_INVALID_HEADER;
+        return snrxk_BlockValidationResult_INVALID_HEADER;
     case BlockValidationResult::BLOCK_MUTATED:
-        return btck_BlockValidationResult_MUTATED;
+        return snrxk_BlockValidationResult_MUTATED;
     case BlockValidationResult::BLOCK_MISSING_PREV:
-        return btck_BlockValidationResult_MISSING_PREV;
+        return snrxk_BlockValidationResult_MISSING_PREV;
     case BlockValidationResult::BLOCK_INVALID_PREV:
-        return btck_BlockValidationResult_INVALID_PREV;
+        return snrxk_BlockValidationResult_INVALID_PREV;
     case BlockValidationResult::BLOCK_TIME_FUTURE:
-        return btck_BlockValidationResult_TIME_FUTURE;
+        return snrxk_BlockValidationResult_TIME_FUTURE;
     case BlockValidationResult::BLOCK_HEADER_LOW_WORK:
-        return btck_BlockValidationResult_HEADER_LOW_WORK;
+        return snrxk_BlockValidationResult_HEADER_LOW_WORK;
     } // no default case, so the compiler can warn about missing cases
     assert(false);
 }
 
-btck_ChainstateManagerOptions* btck_chainstate_manager_options_create(const btck_Context* context, const char* data_dir, size_t data_dir_len, const char* blocks_dir, size_t blocks_dir_len)
+snrxk_ChainstateManagerOptions* snrxk_chainstate_manager_options_create(const snrxk_Context* context, const char* data_dir, size_t data_dir_len, const char* blocks_dir, size_t blocks_dir_len)
 {
     if (data_dir == nullptr || data_dir_len == 0 || blocks_dir == nullptr || blocks_dir_len == 0) {
         LogError("Failed to create chainstate manager options: dir must be non-null and non-empty");
@@ -955,59 +955,59 @@ btck_ChainstateManagerOptions* btck_chainstate_manager_options_create(const btck
         fs::create_directories(abs_data_dir);
         fs::path abs_blocks_dir{fs::absolute(fs::PathFromString({blocks_dir, blocks_dir_len}))};
         fs::create_directories(abs_blocks_dir);
-        return btck_ChainstateManagerOptions::create(btck_Context::get(context), abs_data_dir, abs_blocks_dir);
+        return snrxk_ChainstateManagerOptions::create(snrxk_Context::get(context), abs_data_dir, abs_blocks_dir);
     } catch (const std::exception& e) {
         LogError("Failed to create chainstate manager options: %s", e.what());
         return nullptr;
     }
 }
 
-void btck_chainstate_manager_options_set_worker_threads_num(btck_ChainstateManagerOptions* opts, int worker_threads)
+void snrxk_chainstate_manager_options_set_worker_threads_num(snrxk_ChainstateManagerOptions* opts, int worker_threads)
 {
-    LOCK(btck_ChainstateManagerOptions::get(opts).m_mutex);
-    btck_ChainstateManagerOptions::get(opts).m_chainman_options.worker_threads_num = worker_threads;
+    LOCK(snrxk_ChainstateManagerOptions::get(opts).m_mutex);
+    snrxk_ChainstateManagerOptions::get(opts).m_chainman_options.worker_threads_num = worker_threads;
 }
 
-void btck_chainstate_manager_options_destroy(btck_ChainstateManagerOptions* options)
+void snrxk_chainstate_manager_options_destroy(snrxk_ChainstateManagerOptions* options)
 {
     delete options;
 }
 
-int btck_chainstate_manager_options_set_wipe_dbs(btck_ChainstateManagerOptions* chainman_opts, int wipe_block_tree_db, int wipe_chainstate_db)
+int snrxk_chainstate_manager_options_set_wipe_dbs(snrxk_ChainstateManagerOptions* chainman_opts, int wipe_block_tree_db, int wipe_chainstate_db)
 {
     if (wipe_block_tree_db == 1 && wipe_chainstate_db != 1) {
         LogError("Wiping the block tree db without also wiping the chainstate db is currently unsupported.");
         return -1;
     }
-    auto& opts{btck_ChainstateManagerOptions::get(chainman_opts)};
+    auto& opts{snrxk_ChainstateManagerOptions::get(chainman_opts)};
     LOCK(opts.m_mutex);
     opts.m_blockman_options.block_tree_db_params.wipe_data = wipe_block_tree_db == 1;
     opts.m_chainstate_load_options.wipe_chainstate_db = wipe_chainstate_db == 1;
     return 0;
 }
 
-void btck_chainstate_manager_options_update_block_tree_db_in_memory(
-    btck_ChainstateManagerOptions* chainman_opts,
+void snrxk_chainstate_manager_options_update_block_tree_db_in_memory(
+    snrxk_ChainstateManagerOptions* chainman_opts,
     int block_tree_db_in_memory)
 {
-    auto& opts{btck_ChainstateManagerOptions::get(chainman_opts)};
+    auto& opts{snrxk_ChainstateManagerOptions::get(chainman_opts)};
     LOCK(opts.m_mutex);
     opts.m_blockman_options.block_tree_db_params.memory_only = block_tree_db_in_memory == 1;
 }
 
-void btck_chainstate_manager_options_update_chainstate_db_in_memory(
-    btck_ChainstateManagerOptions* chainman_opts,
+void snrxk_chainstate_manager_options_update_chainstate_db_in_memory(
+    snrxk_ChainstateManagerOptions* chainman_opts,
     int chainstate_db_in_memory)
 {
-    auto& opts{btck_ChainstateManagerOptions::get(chainman_opts)};
+    auto& opts{snrxk_ChainstateManagerOptions::get(chainman_opts)};
     LOCK(opts.m_mutex);
     opts.m_chainstate_load_options.coins_db_in_memory = chainstate_db_in_memory == 1;
 }
 
-btck_ChainstateManager* btck_chainstate_manager_create(
-    const btck_ChainstateManagerOptions* chainman_opts)
+snrxk_ChainstateManager* snrxk_chainstate_manager_create(
+    const snrxk_ChainstateManagerOptions* chainman_opts)
 {
-    auto& opts{btck_ChainstateManagerOptions::get(chainman_opts)};
+    auto& opts{snrxk_ChainstateManagerOptions::get(chainman_opts)};
     std::unique_ptr<ChainstateManager> chainman;
     try {
         LOCK(opts.m_mutex);
@@ -1040,31 +1040,31 @@ btck_ChainstateManager* btck_chainstate_manager_create(
         return nullptr;
     }
 
-    return btck_ChainstateManager::create(std::move(chainman), opts.m_context);
+    return snrxk_ChainstateManager::create(std::move(chainman), opts.m_context);
 }
 
-const btck_BlockTreeEntry* btck_chainstate_manager_get_block_tree_entry_by_hash(const btck_ChainstateManager* chainman, const btck_BlockHash* block_hash)
+const snrxk_BlockTreeEntry* snrxk_chainstate_manager_get_block_tree_entry_by_hash(const snrxk_ChainstateManager* chainman, const snrxk_BlockHash* block_hash)
 {
-    auto block_index = WITH_LOCK(btck_ChainstateManager::get(chainman).m_chainman->GetMutex(),
-                                 return btck_ChainstateManager::get(chainman).m_chainman->m_blockman.LookupBlockIndex(btck_BlockHash::get(block_hash)));
+    auto block_index = WITH_LOCK(snrxk_ChainstateManager::get(chainman).m_chainman->GetMutex(),
+                                 return snrxk_ChainstateManager::get(chainman).m_chainman->m_blockman.LookupBlockIndex(snrxk_BlockHash::get(block_hash)));
     if (!block_index) {
         LogDebug(BCLog::KERNEL, "A block with the given hash is not indexed.");
         return nullptr;
     }
-    return btck_BlockTreeEntry::ref(block_index);
+    return snrxk_BlockTreeEntry::ref(block_index);
 }
 
-const btck_BlockTreeEntry* btck_chainstate_manager_get_best_entry(const btck_ChainstateManager* chainstate_manager)
+const snrxk_BlockTreeEntry* snrxk_chainstate_manager_get_best_entry(const snrxk_ChainstateManager* chainstate_manager)
 {
-    auto& chainman = *btck_ChainstateManager::get(chainstate_manager).m_chainman;
-    return btck_BlockTreeEntry::ref(WITH_LOCK(chainman.GetMutex(), return chainman.m_best_header));
+    auto& chainman = *snrxk_ChainstateManager::get(chainstate_manager).m_chainman;
+    return snrxk_BlockTreeEntry::ref(WITH_LOCK(chainman.GetMutex(), return chainman.m_best_header));
 }
 
-void btck_chainstate_manager_destroy(btck_ChainstateManager* chainman)
+void snrxk_chainstate_manager_destroy(snrxk_ChainstateManager* chainman)
 {
     {
-        LOCK(btck_ChainstateManager::get(chainman).m_chainman->GetMutex());
-        for (const auto& chainstate : btck_ChainstateManager::get(chainman).m_chainman->m_chainstates) {
+        LOCK(snrxk_ChainstateManager::get(chainman).m_chainman->GetMutex());
+        for (const auto& chainstate : snrxk_ChainstateManager::get(chainman).m_chainman->m_chainstates) {
             if (chainstate->CanFlushToDisk()) {
                 chainstate->ForceFlushStateToDisk();
                 chainstate->ResetCoinsViews();
@@ -1075,7 +1075,7 @@ void btck_chainstate_manager_destroy(btck_ChainstateManager* chainman)
     delete chainman;
 }
 
-int btck_chainstate_manager_import_blocks(btck_ChainstateManager* chainman, const char** block_file_paths_data, size_t* block_file_paths_lens, size_t block_file_paths_data_len)
+int snrxk_chainstate_manager_import_blocks(snrxk_ChainstateManager* chainman, const char** block_file_paths_data, size_t* block_file_paths_lens, size_t block_file_paths_data_len)
 {
     try {
         std::vector<fs::path> import_files;
@@ -1085,7 +1085,7 @@ int btck_chainstate_manager_import_blocks(btck_ChainstateManager* chainman, cons
                 import_files.emplace_back(std::string{block_file_paths_data[i], block_file_paths_lens[i]}.c_str());
             }
         }
-        auto& chainman_ref{*btck_ChainstateManager::get(chainman).m_chainman};
+        auto& chainman_ref{*snrxk_ChainstateManager::get(chainman).m_chainman};
         node::ImportBlocks(chainman_ref, import_files);
         WITH_LOCK(::cs_main, chainman_ref.UpdateIBDStatus());
     } catch (const std::exception& e) {
@@ -1095,7 +1095,7 @@ int btck_chainstate_manager_import_blocks(btck_ChainstateManager* chainman, cons
     return 0;
 }
 
-btck_Block* btck_block_create(const void* raw_block, size_t raw_block_length)
+snrxk_Block* snrxk_block_create(const void* raw_block, size_t raw_block_length)
 {
     if (raw_block == nullptr && raw_block_length != 0) {
         return nullptr;
@@ -1111,211 +1111,211 @@ btck_Block* btck_block_create(const void* raw_block, size_t raw_block_length)
         return nullptr;
     }
 
-    return btck_Block::create(block);
+    return snrxk_Block::create(block);
 }
 
-btck_Block* btck_block_copy(const btck_Block* block)
+snrxk_Block* snrxk_block_copy(const snrxk_Block* block)
 {
-    return btck_Block::copy(block);
+    return snrxk_Block::copy(block);
 }
 
-size_t btck_block_count_transactions(const btck_Block* block)
+size_t snrxk_block_count_transactions(const snrxk_Block* block)
 {
-    return btck_Block::get(block)->vtx.size();
+    return snrxk_Block::get(block)->vtx.size();
 }
 
-const btck_Transaction* btck_block_get_transaction_at(const btck_Block* block, size_t index)
+const snrxk_Transaction* snrxk_block_get_transaction_at(const snrxk_Block* block, size_t index)
 {
-    assert(index < btck_Block::get(block)->vtx.size());
-    return btck_Transaction::ref(&btck_Block::get(block)->vtx[index]);
+    assert(index < snrxk_Block::get(block)->vtx.size());
+    return snrxk_Transaction::ref(&snrxk_Block::get(block)->vtx[index]);
 }
 
-btck_BlockHeader* btck_block_get_header(const btck_Block* block)
+snrxk_BlockHeader* snrxk_block_get_header(const snrxk_Block* block)
 {
-    const auto& block_ptr = btck_Block::get(block);
-    return btck_BlockHeader::create(static_cast<const CBlockHeader&>(*block_ptr));
+    const auto& block_ptr = snrxk_Block::get(block);
+    return snrxk_BlockHeader::create(static_cast<const CBlockHeader&>(*block_ptr));
 }
 
-int btck_block_to_bytes(const btck_Block* block, btck_WriteBytes writer, void* user_data)
+int snrxk_block_to_bytes(const snrxk_Block* block, snrxk_WriteBytes writer, void* user_data)
 {
     try {
         WriterStream ws{writer, user_data};
-        ws << TX_WITH_WITNESS(*btck_Block::get(block));
+        ws << TX_WITH_WITNESS(*snrxk_Block::get(block));
         return 0;
     } catch (...) {
         return -1;
     }
 }
 
-btck_BlockHash* btck_block_get_hash(const btck_Block* block)
+snrxk_BlockHash* snrxk_block_get_hash(const snrxk_Block* block)
 {
-    return btck_BlockHash::create(btck_Block::get(block)->GetHash());
+    return snrxk_BlockHash::create(snrxk_Block::get(block)->GetHash());
 }
 
-void btck_block_destroy(btck_Block* block)
+void snrxk_block_destroy(snrxk_Block* block)
 {
     delete block;
 }
 
-btck_Block* btck_block_read(const btck_ChainstateManager* chainman, const btck_BlockTreeEntry* entry)
+snrxk_Block* snrxk_block_read(const snrxk_ChainstateManager* chainman, const snrxk_BlockTreeEntry* entry)
 {
     auto block{std::make_shared<CBlock>()};
-    if (!btck_ChainstateManager::get(chainman).m_chainman->m_blockman.ReadBlock(*block, btck_BlockTreeEntry::get(entry))) {
+    if (!snrxk_ChainstateManager::get(chainman).m_chainman->m_blockman.ReadBlock(*block, snrxk_BlockTreeEntry::get(entry))) {
         LogError("Failed to read block.");
         return nullptr;
     }
-    return btck_Block::create(block);
+    return snrxk_Block::create(block);
 }
 
-btck_BlockHeader* btck_block_tree_entry_get_block_header(const btck_BlockTreeEntry* entry)
+snrxk_BlockHeader* snrxk_block_tree_entry_get_block_header(const snrxk_BlockTreeEntry* entry)
 {
-    return btck_BlockHeader::create(btck_BlockTreeEntry::get(entry).GetBlockHeader());
+    return snrxk_BlockHeader::create(snrxk_BlockTreeEntry::get(entry).GetBlockHeader());
 }
 
-int32_t btck_block_tree_entry_get_height(const btck_BlockTreeEntry* entry)
+int32_t snrxk_block_tree_entry_get_height(const snrxk_BlockTreeEntry* entry)
 {
-    return btck_BlockTreeEntry::get(entry).nHeight;
+    return snrxk_BlockTreeEntry::get(entry).nHeight;
 }
 
-const btck_BlockHash* btck_block_tree_entry_get_block_hash(const btck_BlockTreeEntry* entry)
+const snrxk_BlockHash* snrxk_block_tree_entry_get_block_hash(const snrxk_BlockTreeEntry* entry)
 {
-    return btck_BlockHash::ref(btck_BlockTreeEntry::get(entry).phashBlock);
+    return snrxk_BlockHash::ref(snrxk_BlockTreeEntry::get(entry).phashBlock);
 }
 
-int btck_block_tree_entry_equals(const btck_BlockTreeEntry* entry1, const btck_BlockTreeEntry* entry2)
+int snrxk_block_tree_entry_equals(const snrxk_BlockTreeEntry* entry1, const snrxk_BlockTreeEntry* entry2)
 {
-    return &btck_BlockTreeEntry::get(entry1) == &btck_BlockTreeEntry::get(entry2);
+    return &snrxk_BlockTreeEntry::get(entry1) == &snrxk_BlockTreeEntry::get(entry2);
 }
 
-btck_BlockHash* btck_block_hash_create(const unsigned char block_hash[32])
+snrxk_BlockHash* snrxk_block_hash_create(const unsigned char block_hash[32])
 {
-    return btck_BlockHash::create(std::span<const unsigned char>{block_hash, 32});
+    return snrxk_BlockHash::create(std::span<const unsigned char>{block_hash, 32});
 }
 
-btck_BlockHash* btck_block_hash_copy(const btck_BlockHash* block_hash)
+snrxk_BlockHash* snrxk_block_hash_copy(const snrxk_BlockHash* block_hash)
 {
-    return btck_BlockHash::copy(block_hash);
+    return snrxk_BlockHash::copy(block_hash);
 }
 
-void btck_block_hash_to_bytes(const btck_BlockHash* block_hash, unsigned char output[32])
+void snrxk_block_hash_to_bytes(const snrxk_BlockHash* block_hash, unsigned char output[32])
 {
-    std::memcpy(output, btck_BlockHash::get(block_hash).begin(), 32);
+    std::memcpy(output, snrxk_BlockHash::get(block_hash).begin(), 32);
 }
 
-int btck_block_hash_equals(const btck_BlockHash* hash1, const btck_BlockHash* hash2)
+int snrxk_block_hash_equals(const snrxk_BlockHash* hash1, const snrxk_BlockHash* hash2)
 {
-    return btck_BlockHash::get(hash1) == btck_BlockHash::get(hash2);
+    return snrxk_BlockHash::get(hash1) == snrxk_BlockHash::get(hash2);
 }
 
-void btck_block_hash_destroy(btck_BlockHash* hash)
+void snrxk_block_hash_destroy(snrxk_BlockHash* hash)
 {
     delete hash;
 }
 
-btck_BlockSpentOutputs* btck_block_spent_outputs_read(const btck_ChainstateManager* chainman, const btck_BlockTreeEntry* entry)
+snrxk_BlockSpentOutputs* snrxk_block_spent_outputs_read(const snrxk_ChainstateManager* chainman, const snrxk_BlockTreeEntry* entry)
 {
     auto block_undo{std::make_shared<CBlockUndo>()};
-    if (btck_BlockTreeEntry::get(entry).nHeight < 1) {
+    if (snrxk_BlockTreeEntry::get(entry).nHeight < 1) {
         LogDebug(BCLog::KERNEL, "The genesis block does not have any spent outputs.");
-        return btck_BlockSpentOutputs::create(block_undo);
+        return snrxk_BlockSpentOutputs::create(block_undo);
     }
-    if (!btck_ChainstateManager::get(chainman).m_chainman->m_blockman.ReadBlockUndo(*block_undo, btck_BlockTreeEntry::get(entry))) {
+    if (!snrxk_ChainstateManager::get(chainman).m_chainman->m_blockman.ReadBlockUndo(*block_undo, snrxk_BlockTreeEntry::get(entry))) {
         LogError("Failed to read block spent outputs data.");
         return nullptr;
     }
-    return btck_BlockSpentOutputs::create(block_undo);
+    return snrxk_BlockSpentOutputs::create(block_undo);
 }
 
-btck_BlockSpentOutputs* btck_block_spent_outputs_copy(const btck_BlockSpentOutputs* block_spent_outputs)
+snrxk_BlockSpentOutputs* snrxk_block_spent_outputs_copy(const snrxk_BlockSpentOutputs* block_spent_outputs)
 {
-    return btck_BlockSpentOutputs::copy(block_spent_outputs);
+    return snrxk_BlockSpentOutputs::copy(block_spent_outputs);
 }
 
-size_t btck_block_spent_outputs_count(const btck_BlockSpentOutputs* block_spent_outputs)
+size_t snrxk_block_spent_outputs_count(const snrxk_BlockSpentOutputs* block_spent_outputs)
 {
-    return btck_BlockSpentOutputs::get(block_spent_outputs)->vtxundo.size();
+    return snrxk_BlockSpentOutputs::get(block_spent_outputs)->vtxundo.size();
 }
 
-const btck_TransactionSpentOutputs* btck_block_spent_outputs_get_transaction_spent_outputs_at(const btck_BlockSpentOutputs* block_spent_outputs, size_t transaction_index)
+const snrxk_TransactionSpentOutputs* snrxk_block_spent_outputs_get_transaction_spent_outputs_at(const snrxk_BlockSpentOutputs* block_spent_outputs, size_t transaction_index)
 {
-    assert(transaction_index < btck_BlockSpentOutputs::get(block_spent_outputs)->vtxundo.size());
-    const auto* tx_undo{&btck_BlockSpentOutputs::get(block_spent_outputs)->vtxundo.at(transaction_index)};
-    return btck_TransactionSpentOutputs::ref(tx_undo);
+    assert(transaction_index < snrxk_BlockSpentOutputs::get(block_spent_outputs)->vtxundo.size());
+    const auto* tx_undo{&snrxk_BlockSpentOutputs::get(block_spent_outputs)->vtxundo.at(transaction_index)};
+    return snrxk_TransactionSpentOutputs::ref(tx_undo);
 }
 
-void btck_block_spent_outputs_destroy(btck_BlockSpentOutputs* block_spent_outputs)
+void snrxk_block_spent_outputs_destroy(snrxk_BlockSpentOutputs* block_spent_outputs)
 {
     delete block_spent_outputs;
 }
 
-btck_TransactionSpentOutputs* btck_transaction_spent_outputs_copy(const btck_TransactionSpentOutputs* transaction_spent_outputs)
+snrxk_TransactionSpentOutputs* snrxk_transaction_spent_outputs_copy(const snrxk_TransactionSpentOutputs* transaction_spent_outputs)
 {
-    return btck_TransactionSpentOutputs::copy(transaction_spent_outputs);
+    return snrxk_TransactionSpentOutputs::copy(transaction_spent_outputs);
 }
 
-size_t btck_transaction_spent_outputs_count(const btck_TransactionSpentOutputs* transaction_spent_outputs)
+size_t snrxk_transaction_spent_outputs_count(const snrxk_TransactionSpentOutputs* transaction_spent_outputs)
 {
-    return btck_TransactionSpentOutputs::get(transaction_spent_outputs).vprevout.size();
+    return snrxk_TransactionSpentOutputs::get(transaction_spent_outputs).vprevout.size();
 }
 
-void btck_transaction_spent_outputs_destroy(btck_TransactionSpentOutputs* transaction_spent_outputs)
+void snrxk_transaction_spent_outputs_destroy(snrxk_TransactionSpentOutputs* transaction_spent_outputs)
 {
     delete transaction_spent_outputs;
 }
 
-const btck_Coin* btck_transaction_spent_outputs_get_coin_at(const btck_TransactionSpentOutputs* transaction_spent_outputs, size_t coin_index)
+const snrxk_Coin* snrxk_transaction_spent_outputs_get_coin_at(const snrxk_TransactionSpentOutputs* transaction_spent_outputs, size_t coin_index)
 {
-    assert(coin_index < btck_TransactionSpentOutputs::get(transaction_spent_outputs).vprevout.size());
-    const Coin* coin{&btck_TransactionSpentOutputs::get(transaction_spent_outputs).vprevout.at(coin_index)};
-    return btck_Coin::ref(coin);
+    assert(coin_index < snrxk_TransactionSpentOutputs::get(transaction_spent_outputs).vprevout.size());
+    const Coin* coin{&snrxk_TransactionSpentOutputs::get(transaction_spent_outputs).vprevout.at(coin_index)};
+    return snrxk_Coin::ref(coin);
 }
 
-btck_Coin* btck_coin_copy(const btck_Coin* coin)
+snrxk_Coin* snrxk_coin_copy(const snrxk_Coin* coin)
 {
-    return btck_Coin::copy(coin);
+    return snrxk_Coin::copy(coin);
 }
 
-uint32_t btck_coin_confirmation_height(const btck_Coin* coin)
+uint32_t snrxk_coin_confirmation_height(const snrxk_Coin* coin)
 {
-    return btck_Coin::get(coin).nHeight;
+    return snrxk_Coin::get(coin).nHeight;
 }
 
-int btck_coin_is_coinbase(const btck_Coin* coin)
+int snrxk_coin_is_coinbase(const snrxk_Coin* coin)
 {
-    return btck_Coin::get(coin).IsCoinBase() ? 1 : 0;
+    return snrxk_Coin::get(coin).IsCoinBase() ? 1 : 0;
 }
 
-const btck_TransactionOutput* btck_coin_get_output(const btck_Coin* coin)
+const snrxk_TransactionOutput* snrxk_coin_get_output(const snrxk_Coin* coin)
 {
-    return btck_TransactionOutput::ref(&btck_Coin::get(coin).out);
+    return snrxk_TransactionOutput::ref(&snrxk_Coin::get(coin).out);
 }
 
-void btck_coin_destroy(btck_Coin* coin)
+void snrxk_coin_destroy(snrxk_Coin* coin)
 {
     delete coin;
 }
 
-int btck_chainstate_manager_process_block(
-    btck_ChainstateManager* chainman,
-    const btck_Block* block,
+int snrxk_chainstate_manager_process_block(
+    snrxk_ChainstateManager* chainman,
+    const snrxk_Block* block,
     int* _new_block)
 {
     bool new_block;
-    auto result = btck_ChainstateManager::get(chainman).m_chainman->ProcessNewBlock(btck_Block::get(block), /*force_processing=*/true, /*min_pow_checked=*/true, /*new_block=*/&new_block);
+    auto result = snrxk_ChainstateManager::get(chainman).m_chainman->ProcessNewBlock(snrxk_Block::get(block), /*force_processing=*/true, /*min_pow_checked=*/true, /*new_block=*/&new_block);
     if (_new_block) {
         *_new_block = new_block ? 1 : 0;
     }
     return result ? 0 : -1;
 }
 
-int btck_chainstate_manager_process_block_header(
-    btck_ChainstateManager* chainstate_manager,
-    const btck_BlockHeader* header,
-    btck_BlockValidationState* state)
+int snrxk_chainstate_manager_process_block_header(
+    snrxk_ChainstateManager* chainstate_manager,
+    const snrxk_BlockHeader* header,
+    snrxk_BlockValidationState* state)
 {
     try {
-        auto& chainman = btck_ChainstateManager::get(chainstate_manager).m_chainman;
-        auto result = chainman->ProcessNewBlockHeaders({&btck_BlockHeader::get(header), 1}, /*min_pow_checked=*/true, btck_BlockValidationState::get(state), /*ppindex=*/nullptr);
+        auto& chainman = snrxk_ChainstateManager::get(chainstate_manager).m_chainman;
+        auto result = chainman->ProcessNewBlockHeaders({&snrxk_BlockHeader::get(header), 1}, /*min_pow_checked=*/true, snrxk_BlockValidationState::get(state), /*ppindex=*/nullptr);
 
         return result ? 0 : -1;
     } catch (const std::exception& e) {
@@ -1324,30 +1324,30 @@ int btck_chainstate_manager_process_block_header(
     }
 }
 
-const btck_Chain* btck_chainstate_manager_get_active_chain(const btck_ChainstateManager* chainman)
+const snrxk_Chain* snrxk_chainstate_manager_get_active_chain(const snrxk_ChainstateManager* chainman)
 {
-    return btck_Chain::ref(&WITH_LOCK(btck_ChainstateManager::get(chainman).m_chainman->GetMutex(), return btck_ChainstateManager::get(chainman).m_chainman->ActiveChain()));
+    return snrxk_Chain::ref(&WITH_LOCK(snrxk_ChainstateManager::get(chainman).m_chainman->GetMutex(), return snrxk_ChainstateManager::get(chainman).m_chainman->ActiveChain()));
 }
 
-int btck_chain_get_height(const btck_Chain* chain)
-{
-    LOCK(::cs_main);
-    return btck_Chain::get(chain).Height();
-}
-
-const btck_BlockTreeEntry* btck_chain_get_by_height(const btck_Chain* chain, int height)
+int snrxk_chain_get_height(const snrxk_Chain* chain)
 {
     LOCK(::cs_main);
-    return btck_BlockTreeEntry::ref(btck_Chain::get(chain)[height]);
+    return snrxk_Chain::get(chain).Height();
 }
 
-int btck_chain_contains(const btck_Chain* chain, const btck_BlockTreeEntry* entry)
+const snrxk_BlockTreeEntry* snrxk_chain_get_by_height(const snrxk_Chain* chain, int height)
 {
     LOCK(::cs_main);
-    return btck_Chain::get(chain).Contains(&btck_BlockTreeEntry::get(entry)) ? 1 : 0;
+    return snrxk_BlockTreeEntry::ref(snrxk_Chain::get(chain)[height]);
 }
 
-btck_BlockHeader* btck_block_header_create(const void* raw_block_header, size_t raw_block_header_len)
+int snrxk_chain_contains(const snrxk_Chain* chain, const snrxk_BlockTreeEntry* entry)
+{
+    LOCK(::cs_main);
+    return snrxk_Chain::get(chain).Contains(&snrxk_BlockTreeEntry::get(entry)) ? 1 : 0;
+}
+
+snrxk_BlockHeader* snrxk_block_header_create(const void* raw_block_header, size_t raw_block_header_len)
 {
     if (raw_block_header == nullptr && raw_block_header_len != 0) {
         return nullptr;
@@ -1362,45 +1362,45 @@ btck_BlockHeader* btck_block_header_create(const void* raw_block_header, size_t 
         return nullptr;
     }
 
-    return btck_BlockHeader::ref(header.release());
+    return snrxk_BlockHeader::ref(header.release());
 }
 
-btck_BlockHeader* btck_block_header_copy(const btck_BlockHeader* header)
+snrxk_BlockHeader* snrxk_block_header_copy(const snrxk_BlockHeader* header)
 {
-    return btck_BlockHeader::copy(header);
+    return snrxk_BlockHeader::copy(header);
 }
 
-btck_BlockHash* btck_block_header_get_hash(const btck_BlockHeader* header)
+snrxk_BlockHash* snrxk_block_header_get_hash(const snrxk_BlockHeader* header)
 {
-    return btck_BlockHash::create(btck_BlockHeader::get(header).GetHash());
+    return snrxk_BlockHash::create(snrxk_BlockHeader::get(header).GetHash());
 }
 
-const btck_BlockHash* btck_block_header_get_prev_hash(const btck_BlockHeader* header)
+const snrxk_BlockHash* snrxk_block_header_get_prev_hash(const snrxk_BlockHeader* header)
 {
-    return btck_BlockHash::ref(&btck_BlockHeader::get(header).hashPrevBlock);
+    return snrxk_BlockHash::ref(&snrxk_BlockHeader::get(header).hashPrevBlock);
 }
 
-uint32_t btck_block_header_get_timestamp(const btck_BlockHeader* header)
+uint32_t snrxk_block_header_get_timestamp(const snrxk_BlockHeader* header)
 {
-    return btck_BlockHeader::get(header).nTime;
+    return snrxk_BlockHeader::get(header).nTime;
 }
 
-uint32_t btck_block_header_get_bits(const btck_BlockHeader* header)
+uint32_t snrxk_block_header_get_bits(const snrxk_BlockHeader* header)
 {
-    return btck_BlockHeader::get(header).nBits;
+    return snrxk_BlockHeader::get(header).nBits;
 }
 
-int32_t btck_block_header_get_version(const btck_BlockHeader* header)
+int32_t snrxk_block_header_get_version(const snrxk_BlockHeader* header)
 {
-    return btck_BlockHeader::get(header).nVersion;
+    return snrxk_BlockHeader::get(header).nVersion;
 }
 
-uint32_t btck_block_header_get_nonce(const btck_BlockHeader* header)
+uint32_t snrxk_block_header_get_nonce(const snrxk_BlockHeader* header)
 {
-    return btck_BlockHeader::get(header).nNonce;
+    return snrxk_BlockHeader::get(header).nNonce;
 }
 
-void btck_block_header_destroy(btck_BlockHeader* header)
+void snrxk_block_header_destroy(snrxk_BlockHeader* header)
 {
     delete header;
 }

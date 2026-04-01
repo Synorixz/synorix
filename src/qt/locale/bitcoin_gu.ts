@@ -54,11 +54,11 @@
         <translation type="unfinished">&amp; પસંદ કરો</translation>
     </message>
     <message>
-        <source>These are your Bitcoin addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
+        <source>These are your Synorix addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
         <translation type="unfinished">આ તમારા ચુકવણી કરવા માટે ના સરનામાં છે, હંમેશા કિંમત અને મોકલવાના ના સરનામાં ચકાસી લેવા સિક્કા આપતા પહેલા.</translation>
     </message>
     <message>
-        <source>These are your Bitcoin addresses for receiving payments. Use the 'Create new receiving address' button in the receive tab to create new addresses.
+        <source>These are your Synorix addresses for receiving payments. Use the 'Create new receiving address' button in the receive tab to create new addresses.
 Signing is only possible with addresses of the type 'legacy'.</source>
         <translation type="unfinished">આ તમારુ ચૂકવણું લેવા માટે નું સરનામા છે. નવું સરનામું બનાવા માટે "મેળવવા" માટે ની ટેબ માં "ચૂકવણું લેવા માટે નવું સરનામુ બનાવો" બટન વાપરો.
 ડિજિટલી સહી કરવા માટે 'legacy એટલેકે જુના પ્રકાર નુ' પ્રકાર નું સરનામું હોવું જરૂરી છે.</translation>
@@ -188,7 +188,7 @@ Signing is only possible with addresses of the type 'legacy'.</source>
         <translation type="unfinished">પાછળ </translation>
     </message>
     <message>
-        <source>Remember that encrypting your wallet cannot fully protect your bitcoins from being stolen by malware infecting your computer.</source>
+        <source>Remember that encrypting your wallet cannot fully protect your synorixs from being stolen by malware infecting your computer.</source>
         <translation type="unfinished">યાદ રાખો કે તમારા વૉલેટને એન્ક્રિપ્ટ કરવાથી તમારા કમ્પ્યુટરને સંક્રમિત કરતા માલવેર દ્વારા ચોરાઈ જવાથી તમારા બિટકોઈનને સંપૂર્ણપણે સુરક્ષિત કરી શકાશે નહીં.</translation>
     </message>
     <message>
@@ -260,7 +260,7 @@ Signing is only possible with addresses of the type 'legacy'.</source>
     </message>
 </context>
 <context>
-    <name>BitcoinApplication</name>
+    <name>SynorixApplication</name>
     <message>
         <source>Settings file %1 might be corrupt or invalid.</source>
         <translation type="unfinished">સેટિંગ્સ ફાઈલ %1 દૂષિત અથવા અમાન્ય હોઈ શકે છે.</translation>
@@ -323,8 +323,8 @@ Signing is only possible with addresses of the type 'legacy'.</source>
         <translation type="unfinished">રકમ</translation>
     </message>
     <message>
-        <source>Enter a Bitcoin address (e.g. %1)</source>
-        <translation type="unfinished">Bitcoin સરનામું દાખલ કરો (દા.ત. %1 )</translation>
+        <source>Enter a Synorix address (e.g. %1)</source>
+        <translation type="unfinished">Synorix સરનામું દાખલ કરો (દા.ત. %1 )</translation>
     </message>
     <message>
         <source>Unroutable</source>
@@ -427,7 +427,7 @@ Signing is only possible with addresses of the type 'legacy'.</source>
     </message>
 </context>
 <context>
-    <name>BitcoinGUI</name>
+    <name>SynorixGUI</name>
     <message>
         <source>&amp;Overview</source>
         <translation type="unfinished">&amp;ઝાંખી</translation>
@@ -494,7 +494,7 @@ Signing is only possible with addresses of the type 'legacy'.</source>
         <translation type="unfinished">પ્રોક્સી &lt;b&gt;સક્ષમ છે &lt;/b&gt; : %1</translation>
     </message>
     <message>
-        <source>Send coins to a Bitcoin address</source>
+        <source>Send coins to a Synorix address</source>
         <translation type="unfinished">બિટકોઈન એડ્રેસ પર સિક્કા મોકલો</translation>
     </message>
     <message>
@@ -538,7 +538,7 @@ Signing is only possible with addresses of the type 'legacy'.</source>
         <translation type="unfinished">સહી&amp;સંદેશ...</translation>
     </message>
     <message>
-        <source>Sign messages with your Bitcoin addresses to prove you own them</source>
+        <source>Sign messages with your Synorix addresses to prove you own them</source>
         <translation type="unfinished">તમારા બિટકોઈન સરનામાંઓ સાથે તમે તેમના માલિક છો તે સાબિત કરવા માટે સંદેશાઓ પર સહી કરો</translation>
     </message>
     <message>
@@ -546,8 +546,8 @@ Signing is only possible with addresses of the type 'legacy'.</source>
         <translation type="unfinished">&amp;સંદેશ ચકાસો...</translation>
     </message>
     <message>
-        <source>Verify messages to ensure they were signed with specified Bitcoin addresses</source>
-        <translation type="unfinished">સંદેશાઓની ખાતરી કરવા માટે કે તેઓ નિર્દિષ્ટ Bitcoin સરનામાંઓ સાથે સહી કરેલ છે તેની ખાતરી કરો</translation>
+        <source>Verify messages to ensure they were signed with specified Synorix addresses</source>
+        <translation type="unfinished">સંદેશાઓની ખાતરી કરવા માટે કે તેઓ નિર્દિષ્ટ Synorix સરનામાંઓ સાથે સહી કરેલ છે તેની ખાતરી કરો</translation>
     </message>
     <message>
         <source>&amp;Load PSBT from file…</source>
@@ -606,7 +606,7 @@ Signing is only possible with addresses of the type 'legacy'.</source>
         <translation type="unfinished">સાથીદારોએ સાથે જોડાઈ…</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoin: URIs)</source>
+        <source>Request payments (generates QR codes and synorix: URIs)</source>
         <translation type="unfinished">ચુકવણીની વિનંતી કરો (QR કોડ અને બિટકોઈન જનરેટ કરે છે: URI)</translation>
     </message>
     <message>
@@ -661,7 +661,7 @@ Signing is only possible with addresses of the type 'legacy'.</source>
         <translation type="unfinished">આજ સુધીનુ</translation>
     </message>
     <message>
-        <source>Load Partially Signed Bitcoin Transaction</source>
+        <source>Load Partially Signed Synorix Transaction</source>
         <translation type="unfinished">આંશિક રીતે સહી કરેલ બિટકોઈન ટ્રાન્ઝેક્શન લોડ કરો</translation>
     </message>
     <message>
@@ -669,7 +669,7 @@ Signing is only possible with addresses of the type 'legacy'.</source>
         <translation type="unfinished">&amp;ક્લિપબોર્ડ માંથી PSBT લોડ કરો...</translation>
     </message>
     <message>
-        <source>Load Partially Signed Bitcoin Transaction from clipboard</source>
+        <source>Load Partially Signed Synorix Transaction from clipboard</source>
         <translation type="unfinished">ક્લિપબોર્ડથી આંશિક રીતે સહી કરેલ બિટકોઈન ટ્રાન્ઝેક્શન લોડ કરો</translation>
     </message>
     <message>
@@ -689,7 +689,7 @@ Signing is only possible with addresses of the type 'legacy'.</source>
         <translation type="unfinished">&amp;પ્રાપ્ત સરનામાં</translation>
     </message>
     <message>
-        <source>Open a bitcoin: URI</source>
+        <source>Open a synorix: URI</source>
         <translation type="unfinished">બીટકોઈન ખોલો: URI</translation>
     </message>
     <message>
@@ -727,7 +727,7 @@ Signing is only possible with addresses of the type 'legacy'.</source>
         <translation type="unfinished">વૉલેટ સ્થાનાંતરિત કરો</translation>
     </message>
     <message>
-        <source>Show the %1 help message to get a list with possible Bitcoin command-line options</source>
+        <source>Show the %1 help message to get a list with possible Synorix command-line options</source>
         <translation type="unfinished">સંભવિત બિટકોઈન કમાન્ડ-લાઇન વિકલ્પો સાથે સૂચિ મેળવવા માટે મદદ સંદેશ બતાવો %1 </translation>
     </message>
     <message>
@@ -787,7 +787,7 @@ Signing is only possible with addresses of the type 'legacy'.</source>
         <translation type="unfinished">&amp; કેવી રીતે</translation>
     </message>
     <message numerus="yes">
-        <source>%n active connection(s) to Bitcoin network.</source>
+        <source>%n active connection(s) to Synorix network.</source>
         <extracomment>A substring of the tooltip.</extracomment>
         <translation type="unfinished">
             <numerusform>1%n બિટકોઈન નેટવર્ક સાથે સક્રિય જોડાણ(ઓ).</numerusform>
@@ -1311,7 +1311,7 @@ The migration process will create a backup of the wallet before migrating. This 
         <translation type="unfinished">મોકલવાનું સરનામું સંપાદિત કરો</translation>
     </message>
     <message>
-        <source>The entered address "%1" is not a valid Bitcoin address.</source>
+        <source>The entered address "%1" is not a valid Synorix address.</source>
         <translation type="unfinished">દાખલ કરેલ સરનામું "%1" માન્ય બીટકોઈન સરનામું નથી.</translation>
     </message>
     <message>
@@ -1427,7 +1427,7 @@ The migration process will create a backup of the wallet before migrating. This 
         <translation type="unfinished">કસ્ટમ ડેટા ડિરેક્ટરીનો ઉપયોગ કરો:</translation>
     </message>
     <message>
-        <source>Bitcoin</source>
+        <source>Synorix</source>
         <translation type="unfinished">બીટકોઈન </translation>
     </message>
     <message numerus="yes">
@@ -1472,7 +1472,7 @@ The migration process will create a backup of the wallet before migrating. This 
         </translation>
     </message>
     <message>
-        <source>%1 will download and store a copy of the Bitcoin block chain.</source>
+        <source>%1 will download and store a copy of the Synorix block chain.</source>
         <translation type="unfinished">%1 બિટકોઈન બ્લોક ચેઈનની કોપી ડાઉનલોડ અને સ્ટોર કરશે.</translation>
     </message>
     <message>
@@ -1495,11 +1495,11 @@ The migration process will create a backup of the wallet before migrating. This 
         <translation type="unfinished">ફોર્મ</translation>
     </message>
     <message>
-        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the bitcoin network, as detailed below.</source>
+        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the synorix network, as detailed below.</source>
         <translation type="unfinished">તાજેતરના વ્યવહારો હજુ સુધી દેખાતા ન હોઈ શકે અને તેથી તમારા વૉલેટનું બેલેન્સ ખોટું હોઈ શકે છે. એકવાર તમારું વૉલેટ બિટકોઇન નેટવર્ક સાથે સિંક્રનાઇઝ થઈ જાય પછી આ માહિતી સાચી હશે, જેમ કે નીચે વિગતવાર છે.</translation>
     </message>
     <message>
-        <source>Attempting to spend bitcoins that are affected by not-yet-displayed transactions will not be accepted by the network.</source>
+        <source>Attempting to spend synorixs that are affected by not-yet-displayed transactions will not be accepted by the network.</source>
         <translation type="unfinished">હજુ સુધી પ્રદર્શિત ન થયેલા વ્યવહારોથી પ્રભાવિત બિટકોઇન્સનો ખર્ચ કરવાનો પ્રયાસ નેટવર્ક દ્વારા સ્વીકારવામાં આવશે નહીં.</translation>
     </message>
     <message>
@@ -1554,7 +1554,7 @@ The migration process will create a backup of the wallet before migrating. This 
 <context>
     <name>OpenURIDialog</name>
     <message>
-        <source>Open bitcoin URI</source>
+        <source>Open synorix URI</source>
         <translation type="unfinished">બિટકોઈન URI ખોલો</translation>
     </message>
     <message>
@@ -1726,8 +1726,8 @@ The migration process will create a backup of the wallet before migrating. This 
         <translation type="unfinished">ઇનકમિંગ કનેક્શન્સને મંજૂરી આપો</translation>
     </message>
     <message>
-        <source>Connect to the Bitcoin network through a SOCKS5 proxy.</source>
-        <translation type="unfinished">SOCKS5 પ્રોક્સી દ્વારા Bitcoin નેટવર્કથી કનેક્ટ થાઓ.</translation>
+        <source>Connect to the Synorix network through a SOCKS5 proxy.</source>
+        <translation type="unfinished">SOCKS5 પ્રોક્સી દ્વારા Synorix નેટવર્કથી કનેક્ટ થાઓ.</translation>
     </message>
     <message>
         <source>&amp;Connect through SOCKS5 proxy (default proxy):</source>
@@ -1806,7 +1806,7 @@ The migration process will create a backup of the wallet before migrating. This 
         <translation type="unfinished">સિક્કા નિયંત્રણ સુવિધાઓ દર્શાવવી કે નહીં.</translation>
     </message>
     <message>
-        <source>Connect to the Bitcoin network through a separate SOCKS5 proxy for Tor onion services.</source>
+        <source>Connect to the Synorix network through a separate SOCKS5 proxy for Tor onion services.</source>
         <translation type="unfinished">ટોર ઓનિયન સેવાઓ માટે અલગ SOCKS5 પ્રોક્સી દ્વારા બિટકોઇન નેટવર્ક સાથે કનેક્ટ થાઓ.</translation>
     </message>
     <message>
@@ -1903,7 +1903,7 @@ The migration process will create a backup of the wallet before migrating. This 
         <translation type="unfinished">ફોર્મ</translation>
     </message>
     <message>
-        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the Bitcoin network after a connection is established, but this process has not completed yet.</source>
+        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the Synorix network after a connection is established, but this process has not completed yet.</source>
         <translation type="unfinished">પ્રદર્શિત માહિતી જૂની હોઈ શકે છે. કનેક્શન સ્થાપિત થયા પછી તમારું વૉલેટ આપમેળે બિટકોઇન નેટવર્ક સાથે સિંક્રનાઇઝ થાય છે, પરંતુ આ પ્રક્રિયા હજી પૂર્ણ થઈ નથી.</translation>
     </message>
     <message>
@@ -2100,7 +2100,7 @@ The migration process will create a backup of the wallet before migrating. This 
         <translation type="unfinished">ચુકવણી વિનંતી ભૂલ</translation>
     </message>
     <message>
-        <source>Cannot start bitcoin: click-to-pay handler</source>
+        <source>Cannot start synorix: click-to-pay handler</source>
         <translation type="unfinished">બિટકોઇન શરૂ કરી શકતા નથી: ક્લિક-ટુ-પે હેન્ડલર</translation>
     </message>
     <message>
@@ -2108,8 +2108,8 @@ The migration process will create a backup of the wallet before migrating. This 
         <translation type="unfinished">URI હેન્ડલિંગ</translation>
     </message>
     <message>
-        <source>'bitcoin://' is not a valid URI. Use 'bitcoin:' instead.</source>
-        <translation type="unfinished">'bitcoin://' એ માન્ય URI નથી. તેના બદલે 'bitcoin:' નો ઉપયોગ કરો.</translation>
+        <source>'synorix://' is not a valid URI. Use 'synorix:' instead.</source>
+        <translation type="unfinished">'synorix://' એ માન્ય URI નથી. તેના બદલે 'synorix:' નો ઉપયોગ કરો.</translation>
     </message>
     <message>
         <source>Cannot process payment request because BIP70 is not supported.
@@ -2120,8 +2120,8 @@ BIP70 માં વ્યાપક સુરક્ષા ખામીઓને �
 જો તમને આ ભૂલ મળી રહી હોય તો તમારે વેપારીને BIP21 સુસંગત URI પ્રદાન કરવાની વિનંતી કરવી જોઈએ.</translation>
     </message>
     <message>
-        <source>URI cannot be parsed! This can be caused by an invalid Bitcoin address or malformed URI parameters.</source>
-        <translation type="unfinished">URI વિશ્લેષિત કરી શકાતું નથી! આ અમાન્ય Bitcoin સરનામું અથવા દૂષિત URI પરિમાણોને કારણે થઈ શકે છે.</translation>
+        <source>URI cannot be parsed! This can be caused by an invalid Synorix address or malformed URI parameters.</source>
+        <translation type="unfinished">URI વિશ્લેષિત કરી શકાતું નથી! આ અમાન્ય Synorix સરનામું અથવા દૂષિત URI પરિમાણોને કારણે થઈ શકે છે.</translation>
     </message>
     <message>
         <source>Payment request file handling</source>
@@ -2278,7 +2278,7 @@ BIP70 માં વ્યાપક સુરક્ષા ખામીઓને �
         <translation type="unfinished">સ્થાનિક સરનામું</translation>
     </message>
     <message>
-        <source>Network addresses that your Bitcoin node is currently using to communicate with other nodes.</source>
+        <source>Network addresses that your Synorix node is currently using to communicate with other nodes.</source>
         <translation type="unfinished">નેટવર્ક સરનામાં જેનો ઉપયોગ તમારા બિટકોઇન નોડ હાલમાં અન્ય નોડ્સ સાથે વાતચીત કરવા માટે કરી રહ્યા છે.</translation>
     </message>
     <message>
@@ -2733,8 +2733,8 @@ For more information on using this console, type %6.
         <translation type="unfinished">&amp;સંદેશ:</translation>
     </message>
     <message>
-        <source>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the Bitcoin network.</source>
-        <translation type="unfinished">ચુકવણીની વિનંતી સાથે જોડવા માટેનો વૈકલ્પિક સંદેશ, જે વિનંતી ખોલવામાં આવશે ત્યારે પ્રદર્શિત થશે. નોંધ: Bitcoin નેટવર્ક પર ચુકવણી સાથે સંદેશ મોકલવામાં આવશે નહીં.</translation>
+        <source>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the Synorix network.</source>
+        <translation type="unfinished">ચુકવણીની વિનંતી સાથે જોડવા માટેનો વૈકલ્પિક સંદેશ, જે વિનંતી ખોલવામાં આવશે ત્યારે પ્રદર્શિત થશે. નોંધ: Synorix નેટવર્ક પર ચુકવણી સાથે સંદેશ મોકલવામાં આવશે નહીં.</translation>
     </message>
     <message>
         <source>An optional label to associate with the new receiving address.</source>
@@ -3113,7 +3113,7 @@ For more information on using this console, type %6.
     </message>
 </context>
 <context>
-    <name>bitcoin-core</name>
+    <name>synorix-core</name>
     <message>
         <source>default wallet</source>
         <translation type="unfinished">મૂળભૂત વૉલેટ</translation>

@@ -1,4 +1,4 @@
-// Copyright (c) The Bitcoin Core developers
+// Copyright (c) The Synorix Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -872,8 +872,8 @@ void ListenConnections(EventLoop& loop, int fd, InitImpl& init)
     });
 }
 
-extern thread_local ThreadContext g_thread_context; // NOLINT(bitcoin-nontrivial-threadlocal)
-// Silence nonstandard bitcoin tidy error "Variable with non-trivial destructor
+extern thread_local ThreadContext g_thread_context; // NOLINT(synorix-nontrivial-threadlocal)
+// Silence nonstandard synorix tidy error "Variable with non-trivial destructor
 // cannot be thread_local" which should not be a problem on modern platforms, and
 // could lead to a small memory leak at worst on older ones.
 

@@ -78,7 +78,7 @@ build_instrumented_libcxx() {
   rm -rf /tmp/llvm-project
 }
 
-configure_bitcoin_core() {
+configure_synorix_core() {
   local cmake_arg
   local cmake_args=()
 
@@ -103,7 +103,7 @@ configure_bitcoin_core() {
     "${cmake_args[@]}"
 }
 
-build_bitcoin_core() {
+build_synorix_core() {
   cmake --build build --parallel "${BUILD_PARALLEL}"
 }
 
@@ -134,7 +134,7 @@ run_ipc_unit_tests() {
   local runs="$1"
 
   for _ in $(seq 1 "${runs}"); do
-    build/bin/test_bitcoin --run_test=ipc_tests,miner_tests --catch_system_error=no --log_level=nothing --report_level=no
+    build/bin/test_synorix --run_test=ipc_tests,miner_tests --catch_system_error=no --log_level=nothing --report_level=no
   done
 }
 

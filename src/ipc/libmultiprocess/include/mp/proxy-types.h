@@ -1,4 +1,4 @@
-// Copyright (c) The Bitcoin Core developers
+// Copyright (c) The Synorix Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -236,7 +236,7 @@ void ThrowField(TypeList<std::exception>, InvokeContext& invoke_context, Input&&
 //! Return whether to write a C++ value into a Cap'n Proto field. Returning
 //! false can be useful to map certain C++ values to unset Cap'n Proto fields.
 //!
-//! For example the bitcoin `Coin` class asserts false when a spent coin is
+//! For example the synorix `Coin` class asserts false when a spent coin is
 //! serialized. But some C++ methods return these coins, so there needs to be a
 //! way to represent them in Cap'n Proto and a null Data field is a convenient
 //! representation.
@@ -515,7 +515,7 @@ struct ServerCall
                 // because there is no point continuing and trying to fill the
                 // call_context.getResults() struct. It's also important to stop
                 // executing because the connection may have been destroyed as
-                // described in https://github.com/bitcoin/bitcoin/issues/34250
+                // described in https://github.com/synorix/synorix/issues/34250
                 // and there could be invalid references to the destroyed
                 // Connection object if this continued.
                 // If the IPC method itself threw an exception, the

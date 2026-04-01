@@ -99,7 +99,7 @@ IfMacros:
   - KJ_IF_MAYBE
 IncludeBlocks:   Regroup
 IncludeCategories:
-  - Regex:           '^<bitcoin-build-config\.h>'
+  - Regex:           '^<synorix-build-config\.h>'
     Priority:        -1
     CaseSensitive:   true
   - Regex:           '^<boost/'

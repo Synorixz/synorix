@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-present The Bitcoin Core developers
+// Copyright (c) 2009-present The Synorix Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #ifndef BITCOIN_BANMAN_H
@@ -58,7 +58,7 @@ class CSubNet;
 // NOTE: previously a misbehaving peer would get banned instead of discouraged.
 // This meant a peer could unboundedly grow our in-memory map of banned ips. When
 // receiving an ADDR message we would also compare every address received to every
-// item in the map. See https://bitcoincore.org/en/2024/07/03/disclose-unbounded-banlist.
+// item in the map. See https://synorixcore.org/en/2024/07/03/disclose-unbounded-banlist.
 
 class BanMan
 {
