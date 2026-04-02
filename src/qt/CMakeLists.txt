@@ -79,6 +79,7 @@ add_library(synorixqt STATIC EXCLUDE_FROM_ALL
   synorixgui.h
   synorixunits.cpp
   synorixunits.h
+  synorixstrings.cpp
   clientmodel.cpp
   clientmodel.h
   csvmodelwriter.cpp
