@@ -290,6 +290,11 @@ public:
         nPruneAfterHeight = 1000;
         m_assumed_blockchain_size = 1;
         m_assumed_chain_state_size = 1;
+<<<<<<< HEAD
+=======
+
+        genesis = CreateGenesisBlock(1743888000, 0, 0x207fffff, 1, 50 * COIN);
+>>>>>>> b064c7cdfec142b316942b7e5377371f4f727376
 
         genesis = CreateGenesisBlock(1743888000, 0, 0x207fffff, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
