@@ -5226,11 +5226,18 @@ void ChainstateManager::CheckBlockIndex() const
 
         // Begin: actual consistency checks.
         if (pindex->pprev == nullptr) {
-            // Genesis block checks.
-            assert(pindex->GetBlockHash() == GetConsensus().hashGenesisBlock); // Genesis block's hash must match.
-            for (const auto& c : m_chainstates) {
-                if (c->m_chain.Genesis() != nullptr) {
-                    assert(pindex == c->m_chain.Genesis()); // The chain's genesis block must be this block.
+            // Genesis block checks. Synorix: do not abort if disk index predates chainparams genesis
+            // (clean testnet3 datadir on node start from MVP, or -reindex, is the proper fix).
+            if (pindex->GetBlockHash() != GetConsensus().hashGenesisBlock) {
+                LogWarning(
+                    "checkblockindex: on-disk genesis %s != chainparams genesis %s — use a clean datadir or reindex",
+                    pindex->GetBlockHash().ToString(),
+                    GetConsensus().hashGenesisBlock.ToString());
+            } else {
+                for (const auto& c : m_chainstates) {
+                    if (c->m_chain.Genesis() != nullptr) {
+                        assert(pindex == c->m_chain.Genesis()); // The chain's genesis block must be this block.
+                    }
                 }
             }
         }

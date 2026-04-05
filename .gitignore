@@ -27,3 +27,6 @@ target/
 /guix-build-*
 
 /ci/scratch/
+
+# Yerel düğüm ayarı (RPC parolası vb. taşınmamalı)
+/synorix.conf

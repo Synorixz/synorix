@@ -1,0 +1,14 @@
+{
+  "name": "synorix-testnet-mvp",
+  "version": "0.1.0",
+  "description": "Synorix (SNRX) testnet node + wallet + mining — Electron MVP",
+  "main": "main.js",
+  "author": "Synorix",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^33.2.0"
+  }
+}

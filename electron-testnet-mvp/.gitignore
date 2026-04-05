@@ -1,0 +1,11 @@
+node_modules/
+dist/
+out/
+*.log
+.DS_Store
+
+# Yerel derlenmiş düğüm ikilileri — GitHub tek dosya 100 MB sınırı; repoda tutulmaz
+synorixd
+synorixd.exe
+synorix-cli
+synorix-cli.exe

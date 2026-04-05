@@ -33,15 +33,18 @@ make -j$(nproc)
 
 ### Binary'leri İndirme
 
-Her `main` dalına yapılan **push** ve açılan **pull request**’lerde GitHub Actions, başsız (GUI kapalı) **Release** ikililerini üretir.
+Her `main` dalına yapılan **push** ve açılan **pull request**’lerde GitHub Actions (**build-binaries** workflow’u) başsız (GUI kapalı) **Release** ikililerini üretir.
 
 1. GitHub’da repo sayfasında **Actions** sekmesine gidin.
 2. Sol listeden **build-binaries** iş akışını seçin.
-3. İlgili koşuya tıklayın; **Artifacts** bölümünden indirin:
-   - **linux-binaries** — `synorixd`, `synorix-cli` (Linux x86_64, Ubuntu 22.04 uyumlu glibc ile derlenir).
-   - **windows-binaries** — `synorixd.exe`, `synorix-cli.exe` (MSVC + vcpkg; Visual C++ yeniden dağıtılabilir paketleri gerekebilir).
+3. Tamamlanmış bir koşuya tıklayın (yeşil tik). Sarı/turuncu = hâlâ derleniyor; Windows ilk seferde **vcpkg** yüzünden **1–3 saat** sürebilir.
+4. Sayfanın altındaki **Artifacts** bölümünden indirin:
+   - **linux-binaries** — zip: `synorixd`, `synorix-cli` (Linux x86_64; CI’da Ubuntu 24.04 + GCC 13 ile derlenir).
+   - **windows-binaries** — zip: `synorixd.exe`, `synorix-cli.exe` (GitHub runner’da **Visual Studio 2022** + vcpkg; yerelde VS 2026 kullanıyorsanız sürüm farkı normaldir).
 
-Artifact’ler belirli bir süre sonra GitHub tarafından otomatik silinir; kalıcı dağıtım için release veya kendi sunucunuza kopyalayın.
+**Not:** `.exe` dosyaları genelde **Visual C++ yeniden dağıtılabilir** paketine ihtiyaç duyar.
+
+Artifact’ler belirli bir süre sonra GitHub tarafından otomatik silinir; kalıcı dağıtım için **Releases** veya kendi sunucunuza kopyalayın.
 
 ### Testnet (kısa)
 

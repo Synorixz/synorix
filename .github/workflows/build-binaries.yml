@@ -1,0 +1,233 @@
+# =============================================================================
+# Synorix — Linux + Windows headless Release binary artifacts
+#
+# Windows: windows-latest = VS 2022 → --preset vs2022 (vs2026 runner'da yok).
+# vcpkg: BUILD_GUI=OFF yetmez; manifest'te wallet-only + NO_DEFAULT_FEATURES gerekir.
+# Linux: Ubuntu 22.04 + gcc-12 bazen Boost/CMake uyarıları verir; CI için 24.04 + varsayılan
+#        GCC 13 daha stabil (doc/CMakeLists Ubuntu 24.04 cmake sürümünü de listeler).
+# Windows uzun yol: vcpkg buildtrees için --x-buildtrees-root=C:\b önerilir.
+# Derleme kapsamı: yalnızca synorixd + synorix-cli (BUILD_BITCOIN_BIN=OFF); tam "all"
+# bazı runner'larda gereksiz hedef yüzünden düşebilir. Başarısızlıkta tam log artifact.
+# =============================================================================
+
+name: build-binaries
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux-build:
+    name: Linux Build (Ubuntu 24.04)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: recursive
+
+      - name: "[Linux] Install dependencies"
+        run: |
+          set -euxo pipefail
+          echo "==> ubuntu=$(lsb_release -ds 2>/dev/null || true)"
+          echo "==> apt-get update"
+          sudo apt-get update
+          echo "==> apt-get install"
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            build-essential \
+            cmake \
+            libssl-dev \
+            libevent-dev \
+            libboost-all-dev \
+            libsqlite3-dev \
+            pkg-config \
+            git \
+            python3
+          echo "==> gcc --version"; gcc --version
+          echo "==> cmake --version"; cmake --version
+
+      - name: "[Linux] Configure & build"
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euxo pipefail
+          rm -rf build
+          mkdir -p build
+          cd build
+          echo "==> cmake .. from $(pwd)"
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_GUI=OFF \
+            -DBUILD_TESTS=OFF \
+            -DBUILD_BENCH=OFF \
+            -DBUILD_BITCOIN_BIN=OFF \
+            -DWITH_ZMQ=OFF \
+            -DENABLE_IPC=OFF
+          # Sadece yayınlanacak hedefler: "all" içindeki ekstra binary'ler (synorix wrapper vb.)
+          # bazen ortamda kırılırsa tüm job'u düşürür; bağımlılıklar yine derlenir.
+          NPROC=$(nproc)
+          JOBS=$(( NPROC > 3 ? 3 : NPROC ))
+          echo "==> cmake --build . -j${JOBS} --target synorixd --target synorix-cli --verbose (nproc=${NPROC})"
+          cmake --build . --parallel "${JOBS}" --target synorixd --target synorix-cli --verbose 2>&1 | tee linux-build.log
+          echo "==> bin/:"
+          ls -la bin
+          test -x bin/synorixd
+          test -x bin/synorix-cli
+
+      - name: "[Linux] Collect artifacts"
+        if: success()
+        run: |
+          set -euxo pipefail
+          mkdir -p artifact
+          cp -v build/bin/synorixd build/bin/synorix-cli artifact/
+          ls -la artifact/
+
+      - name: "[Linux] Failure — son 120 satır (make/cmake)"
+        if: failure()
+        run: |
+          echo "!!! LINUX JOB FAILED"
+          ls -la || true
+          ls -la build || true
+          ls -la build/bin || true
+          [[ -f build/linux-build.log ]] && { echo "===== tail build/linux-build.log ====="; tail -n 200 build/linux-build.log; }
+          for f in build/CMakeFiles/CMakeOutput.log build/CMakeFiles/CMakeError.log; do
+            [[ -f "$f" ]] && { echo "===== tail $f ====="; tail -n 120 "$f"; }
+          done
+
+      - name: "[Linux] Upload build log on failure"
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build-log
+          path: build/linux-build.log
+          if-no-files-found: ignore
+
+      - name: "[Linux] Upload linux-binaries"
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-binaries
+          path: artifact/
+          if-no-files-found: error
+
+  windows-build:
+    name: Windows Build (windows-latest)
+    runs-on: windows-latest
+    timeout-minutes: 240
+    steps:
+      - name: "[Win] Start"
+        shell: pwsh
+        run: |
+          Write-Host "==> Workspace: ${{ github.workspace }}"
+          New-Item -ItemType Directory -Force -Path 'C:\b' | Out-Null
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: recursive
+
+      - name: "[Win] vcpkg bootstrap"
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not (Test-Path 'C:\vcpkg\scripts\buildsystems\vcpkg.cmake')) {
+            git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
+          }
+          & C:\vcpkg\bootstrap-vcpkg.bat -disableMetrics
+          "VCPKG_ROOT=C:\vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: "[Win] Cache vcpkg"
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ github.workspace }}\build\vcpkg_installed
+            C:\vcpkg\downloads
+            C:\vcpkg\installed
+          key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json') }}-v3-shortpath
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-
+
+      - name: "[Win] MSVC (VS 2022)"
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: "[Win] CMake configure (vs2022 preset)"
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $env:VCPKG_ROOT = 'C:\vcpkg'
+          if (-not (Test-Path "$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake")) {
+            Write-Error "vcpkg toolchain missing"
+          }
+          Write-Host "==> VCPKG_ROOT=$env:VCPKG_ROOT"
+          cmake --version
+          cmake --list-presets
+          $opts = @(
+            '-B', 'build',
+            '--preset', 'vs2022',
+            '-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON',
+            '-DVCPKG_MANIFEST_FEATURES=wallet',
+            '-DBUILD_GUI=OFF',
+            '-DBUILD_TESTS=OFF',
+            '-DBUILD_BENCH=OFF',
+            '-DBUILD_BITCOIN_BIN=OFF',
+            '-DWITH_ZMQ=OFF',
+            '-DENABLE_IPC=OFF',
+            '-DCMAKE_BUILD_TYPE=Release',
+            '-DVCPKG_INSTALL_OPTIONS=--x-buildtrees-root=C:\b'
+          )
+          Write-Host "==> cmake $($opts -join ' ')"
+          & cmake @opts
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: "[Win] Build Release"
+        shell: bash
+        run: |
+          set -euxo pipefail
+          export VCPKG_ROOT="/c/vcpkg"
+          echo "==> cmake --build (synorixd + synorix-cli only, verbose)"
+          cmake --build build --config Release --parallel 4 --verbose --target synorixd --target synorix-cli 2>&1 | tee windows-build.log
+          ls -la build/bin/Release
+          test -f build/bin/Release/synorixd.exe
+          test -f build/bin/Release/synorix-cli.exe
+
+      - name: "[Win] Failure diagnostics"
+        if: failure()
+        shell: pwsh
+        run: |
+          Write-Host "!!! WINDOWS JOB FAILED"
+          if (Test-Path windows-build.log) {
+            Write-Host "===== tail windows-build.log (last 200 lines) ====="
+            Get-Content windows-build.log -Tail 200
+          }
+          Get-ChildItem build -Recurse -Include CMakeError.log,CMakeOutput.log -ErrorAction SilentlyContinue | ForEach-Object {
+            Write-Host "===== $($_.FullName) (tail 100) ====="
+            Get-Content $_.FullName -Tail 100
+          }
+
+      - name: "[Win] Upload build log on failure"
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build-log
+          path: windows-build.log
+          if-no-files-found: ignore
+
+      - name: "[Win] Upload windows-binaries"
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-binaries
+          path: |
+            build/bin/Release/synorixd.exe
+            build/bin/Release/synorix-cli.exe
+          if-no-files-found: error
