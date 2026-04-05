@@ -36,6 +36,23 @@
       }
     },
     {
+      "name": "vs2022",
+      "displayName": "GitHub Actions / VS 2022 + vcpkg (x64-windows)",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
+      "toolchainFile": "$env{VCPKG_ROOT}\\scripts\\buildsystems\\vcpkg.cmake",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-windows",
+        "BUILD_GUI": "ON",
+        "WITH_ZMQ": "ON"
+      }
+    },
+    {
       "name": "libfuzzer",
       "displayName": "Build for fuzzing with libfuzzer, and sanitizers enabled",
       "binaryDir": "${sourceDir}/build_fuzz",

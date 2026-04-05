@@ -29,10 +29,29 @@ cd synorix
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j$(nproc)
+```
 
-Running Testnet
-Bash./synorixd -testnet -daemon
+### Binary'leri İndirme
+
+Her `main` dalına yapılan **push** ve açılan **pull request**’lerde GitHub Actions, başsız (GUI kapalı) **Release** ikililerini üretir.
+
+1. GitHub’da repo sayfasında **Actions** sekmesine gidin.
+2. Sol listeden **build-binaries** iş akışını seçin.
+3. İlgili koşuya tıklayın; **Artifacts** bölümünden indirin:
+   - **linux-binaries** — `synorixd`, `synorix-cli` (Linux x86_64, Ubuntu 22.04 uyumlu glibc ile derlenir).
+   - **windows-binaries** — `synorixd.exe`, `synorix-cli.exe` (MSVC + vcpkg; Visual C++ yeniden dağıtılabilir paketleri gerekebilir).
+
+Artifact’ler belirli bir süre sonra GitHub tarafından otomatik silinir; kalıcı dağıtım için release veya kendi sunucunuza kopyalayın.
+
+### Testnet (kısa)
+
+```bash
+./synorixd -testnet -daemon
 ./synorix-cli -testnet getblockchaininfo
+```
 
-License
+Windows’ta aynı mantıkla `-testnet` kullanın; `synorix.conf` veya ek bayraklarla RPC kullanıcı/parola ayarlayın (bkz. `doc/` ve Electron MVP README).
+
+### License
+
 MIT License — see COPYING file for details.

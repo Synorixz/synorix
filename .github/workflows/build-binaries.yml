@@ -1,0 +1,136 @@
+# Synorix: headless Release binaries (Linux + Windows) as GitHub Actions artifacts.
+#
+# Bilinen riskler / notlar:
+# - windows-latest üzerinde Visual Studio 2022 (generator "Visual Studio 17 2022") bulunur.
+#   CMakePresets.json içindeki "vs2026" (VS 18) bu runner'da yoktur; CI --preset vs2022 kullanır.
+# - vcpkg.json varsayılan özellikleri Qt çeker; headless için VCPKG_MANIFEST_NO_DEFAULT_FEATURES
+#   ve VCPKG_MANIFEST_FEATURES=wallet şart (aksi halde süre çok uzar veya path uzunluğu hatası).
+# - vcpkg önbelleği: baseline/commit değişince cache miss normaldir; ilk koşu uzun sürer.
+# - Ubuntu 22.04 varsayılan GCC 11; Synorix/Bitcoin çekirdeği GCC 12+ ister — gcc-12 paketleri kullanılır.
+# - Linux binary çıktısı Makefile jeneratöründe genelde build/bin/ altında (Release alt klasörü yok).
+# - Artifact süresi: GitHub retention policy (repo/org ayarına bağlı).
+
+name: build-binaries
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux-build:
+    name: Linux Build (Ubuntu 22.04)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            cmake \
+            pkg-config \
+            gcc-12 \
+            g++-12 \
+            libssl-dev \
+            libevent-dev \
+            libboost-all-dev \
+            libsqlite3-dev \
+            python3
+
+      - name: Configure (Release, headless)
+        env:
+          CC: gcc-12
+          CXX: g++-12
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_GUI=OFF \
+            -DBUILD_TESTS=OFF \
+            -DBUILD_BENCH=OFF \
+            -DWITH_ZMQ=OFF \
+            -DENABLE_IPC=OFF
+
+      - name: Build
+        run: cmake --build build --config Release -j "$(nproc)"
+
+      - name: Collect binaries
+        run: |
+          mkdir -p artifact
+          cp -v build/bin/synorixd build/bin/synorix-cli artifact/
+          ls -la artifact/
+
+      - name: Upload linux-binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-binaries
+          path: artifact/
+          if-no-files-found: error
+
+  windows-build:
+    name: Windows Build (windows-latest)
+    runs-on: windows-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Install vcpkg (full clone; manifest baseline shallow clone ile kırılır)
+        shell: pwsh
+        run: |
+          if (-not (Test-Path C:\vcpkg\scripts\buildsystems\vcpkg.cmake)) {
+            git clone --depth 1 https://github.com/microsoft/vcpkg.git C:\vcpkg
+          }
+          & C:\vcpkg\bootstrap-vcpkg.bat -disableMetrics
+          "VCPKG_ROOT=C:\vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      # vcpkg binary cache: configure öncesi boş olabilir; yine de indirme/derleme süresini kısaltır.
+      - name: Cache vcpkg
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ github.workspace }}\build\vcpkg_installed
+            C:\vcpkg\downloads
+            C:\vcpkg\installed
+          key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json') }}-v1
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-
+
+      - name: MSVC environment (VS 2022)
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Configure CMake
+        shell: pwsh
+        run: |
+          cmake -B build --preset vs2022 `
+            -DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON `
+            -DVCPKG_MANIFEST_FEATURES=wallet `
+            -DBUILD_GUI=OFF `
+            -DBUILD_TESTS=OFF `
+            -DBUILD_BENCH=OFF `
+            -DWITH_ZMQ=OFF `
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Release
+        shell: pwsh
+        run: cmake --build build --config Release --parallel 6
+
+      - name: Upload windows-binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-binaries
+          path: |
+            build/bin/Release/synorixd.exe
+            build/bin/Release/synorix-cli.exe
+          if-no-files-found: error
