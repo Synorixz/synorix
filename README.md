@@ -1,60 +1,58 @@
-# Synorix
+# Synorix (SNRX)
 
-**A faster and more usable evolution of Bitcoin.**
+**A faster, more usable evolution of Bitcoin with a sustainable Value Distribution Layer.**
 
-Synorix is a Bitcoin fork designed for better everyday usability while preserving the core principles of sound money.
+Synorix is a progressive Bitcoin fork designed to solve the practical limitations of legacy blockchains—slow confirmation times and network congestion—while introducing a self-sustaining ecosystem funded by an automated, on-chain Treasury.
 
-### Key Features
+## Key Features
 
-- **Block Time**: 2.5 minutes (4x faster than Bitcoin)
-- **Block Size**: 8 MB (significantly higher transaction capacity)
-- **Supply**: 21,000,000 SNRX (same as Bitcoin)
-- **Halving**: Every 210,000 blocks (same schedule as Bitcoin)
-- **Consensus**: SHA-256 Proof-of-Work
-- **Fair Launch**: No premine, no ICO
-- **Low Fees**: Near-zero transaction fees
+* **Block Time:** 2.5 minutes (4x faster than Bitcoin for rapid transactions)
+* **Block Size:** 8 MB (Significantly higher transaction capacity/throughput)
+* **Supply:** 21,000,000 SNRX (Hard-capped, identical to Bitcoin)
+* **Halving:** Every 840,000 blocks (Maintains the ~4-year cycle)
+* **Consensus:** SHA-256 Proof-of-Work
+* **Fair Launch:** 0% Premine, No ICO, No Team Allocation. 100% publicly mined.
+* **On-Chain Treasury:** A predefined portion of network value is routed to a transparent Treasury to fund liquidity, token burns, and ecosystem growth.
+* **Dynamic Difficulty Adjustment (DDA):** Ensures stable 2.5-minute block generation regardless of network hashrate fluctuations.
 
-### Links
+## Links
 
-- **Website**: https://synorixcoin.com (coming soon)
-- **Whitepaper**: [Synorix Whitepaper](Synorix_Whitepaper.pdf)
-- **Explorer**: Coming soon
-- **X (Twitter)**: [@SynorixCoin](https://x.com/SynorixCoin)
+* **Website:** [https://synorixcoin.com](https://synorixcoin.com) *(coming soon)*
+* **Whitepaper:** [Synorix Whitepaper](./WHITEPAPER.md)
+* **Explorer:** *(coming soon)*
+* **X (Twitter):** [@SynorixCoin](https://twitter.com/SynorixCoin)
 
-### Building from Source
+## Building from Source
 
 ```bash
-git clone https://github.com/Synorixz/synorix.git
+git clone [https://github.com/Synorixz/synorix.git](https://github.com/Synorixz/synorix.git)
 cd synorix
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j$(nproc)
 ```
 
-### Binary'leri İndirme
+## Downloading Binaries
 
-Her `main` dalına yapılan **push** ve açılan **pull request**’lerde GitHub Actions (**build-binaries** workflow’u) başsız (GUI kapalı) **Release** ikililerini üretir.
+Release binaries are built automatically via GitHub Actions (`build-binaries` workflow) on every push to the `main` branch and pull requests.
 
-1. GitHub’da repo sayfasında **Actions** sekmesine gidin.
-2. Sol listeden **build-binaries** iş akışını seçin.
-3. Tamamlanmış bir koşuya tıklayın (yeşil tik). Sarı/turuncu = hâlâ derleniyor; Windows ilk seferde **vcpkg** yüzünden **1–3 saat** sürebilir.
-4. Sayfanın altındaki **Artifacts** bölümünden indirin:
-   - **linux-binaries** — zip: `synorixd`, `synorix-cli` (Linux x86_64; CI’da Ubuntu 24.04 + GCC 13 ile derlenir).
-   - **windows-binaries** — zip: `synorixd.exe`, `synorix-cli.exe` (GitHub runner’da **Visual Studio 2022** + vcpkg; yerelde VS 2026 kullanıyorsanız sürüm farkı normaldir).
+1. Go to the **Actions** tab on the GitHub repository page.
+2. Select the **build-binaries** workflow from the left menu.
+3. Click on a completed run (green checkmark). 
+4. Download from the **Artifacts** section at the bottom of the page:
+   * `linux-binaries` — zip: `synorixd`, `synorix-cli` (Compiled on Ubuntu 24.04 + GCC 13).
+   * `windows-binaries` — zip: `synorixd.exe`, `synorix-cli.exe` (Built with Visual Studio 2022 + vcpkg).
 
-**Not:** `.exe` dosyaları genelde **Visual C++ yeniden dağıtılabilir** paketine ihtiyaç duyar.
+*Note: Windows `.exe` files may require the Visual C++ Redistributable package. Artifacts are automatically deleted by GitHub after a certain period; for permanent distribution, check the **Releases** tab.*
 
-Artifact’ler belirli bir süre sonra GitHub tarafından otomatik silinir; kalıcı dağıtım için **Releases** veya kendi sunucunuza kopyalayın.
-
-### Testnet (kısa)
+## Testnet (Quick Start)
 
 ```bash
 ./synorixd -testnet -daemon
 ./synorix-cli -testnet getblockchaininfo
 ```
+*Use `-testnet` with the same logic on Windows. Set RPC user/password in `synorix.conf` or via flags (see `doc/` for details).*
 
-Windows’ta aynı mantıkla `-testnet` kullanın; `synorix.conf` veya ek bayraklarla RPC kullanıcı/parola ayarlayın (bkz. `doc/` ve Electron MVP README).
+## License
 
-### License
-
-MIT License — see COPYING file for details.
+Synorix is released under the terms of the MIT license. See `COPYING` for more information or see https://opensource.org/licenses/MIT.
