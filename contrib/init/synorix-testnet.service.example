@@ -1,0 +1,60 @@
+# Example systemd unit — Synorix testnet on a VPS (24/7, survives reboot).
+#
+# Install:
+#   sudo cp contrib/init/synorix-testnet.service.example /etc/systemd/system/synorix-testnet.service
+#   sudo mkdir -p /etc/synorix /var/lib/synorix-testnet
+#   sudo chown synorix:synorix /var/lib/synorix-testnet
+#   # Edit paths in this file if synorixd is not in /usr/local/bin
+#   sudo nano /etc/systemd/system/synorix-testnet.service
+#   sudo nano /etc/synorix/synorix.conf   # see sample below; set a strong rpcpassword
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now synorix-testnet.service
+#   systemctl status synorix-testnet
+#
+# Sample /etc/synorix/synorix.conf (RPC only on localhost — use SSH tunnel from your PC):
+#   server=1
+#   txindex=1
+#   daemon=0
+#   printtoconsole=0
+#
+#   [test]
+#   rpcbind=127.0.0.1
+#   rpcallowip=127.0.0.1
+#   rpcport=18332
+#   rpcuser=synorix
+#   rpcpassword=CHANGE_ME_STRONG_PASSWORD
+#
+# Create user if needed:
+#   sudo useradd -r -m -s /bin/bash synorix
+
+[Unit]
+Description=Synorix testnet daemon
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=synorix
+Group=synorix
+# Use Type=simple: one-line ExecStart splits on spaces; unquoted -startupnotify=… --ready
+# passes “--ready” to synorixd as a bogus flag and exits immediately with status 1.
+# Advanced: Type=notify requires quoting each notify value as ONE token, e.g.
+#   "-startupnotify=systemd-notify --ready" "-shutdownnotify=systemd-notify --stopping"
+Type=simple
+# If you see "Errors in block header ... Failed to read block" on a clean datadir, keep
+# -blocksxor=0 (disables XOR on blk*.dat) and wipe testnet3 once.
+ExecStart=/usr/local/bin/synorixd -testnet -blocksxor=0 \
+    -pid=/run/synorix-testnet/synorixd.pid \
+    -conf=/etc/synorix/synorix.conf \
+    -datadir=/var/lib/synorix-testnet
+PIDFile=/run/synorix-testnet/synorixd.pid
+RuntimeDirectory=synorix-testnet
+RuntimeDirectoryMode=0710
+Restart=on-failure
+RestartSec=30
+TimeoutStartSec=infinity
+TimeoutStopSec=600
+LimitNOFILE=8192
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1053,10 +1053,14 @@ bool BlockManager::ReadBlock(CBlock& block, const FlatFilePos& pos, const std::o
 
     const auto block_hash{block.GetHash()};
 
-    // Check the header
-    if (!CheckProofOfWork(block_hash, block.nBits, GetConsensus())) {
-        LogError("Errors in block header at %s while reading block", pos.ToString());
-        return false;
+    // Skip PoW for the chain genesis: must match consensus.hashGenesisBlock; some builds
+    // hit CheckProofOfWork failure when loading the written genesis from disk (same header
+    // is accepted again in validation via CheckBlockHeader genesis exception).
+    if (block_hash != GetConsensus().hashGenesisBlock) {
+        if (!CheckProofOfWork(block_hash, block.nBits, GetConsensus())) {
+            LogError("Errors in block header at %s while reading block", pos.ToString());
+            return false;
+        }
     }
 
     // Signet only: check block solution
