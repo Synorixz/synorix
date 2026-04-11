@@ -1852,6 +1852,19 @@ ipcMain.handle('wallet:send', async (_e, { synorixCliPath, address, amount }) =>
   }
 });
 
+ipcMain.handle('wallet:transactions', async (_e, { synorixCliPath, count }) => {
+  try {
+    await ensureUserWallet(synorixCliPath);
+    const wid = getWalletId();
+    const raw = await runCli(synorixCliPath, [`-rpcwallet=${wid}`, 'listtransactions', '*', String(count || 20)]);
+    try { return JSON.parse(raw); } catch { return []; }
+  } catch (e) {
+    if (isRpcConnectionLikeError(String(e && e.message))) return [];
+    if (isRpcWarmupError(e)) return [];
+    return [];
+  }
+});
+
 ipcMain.handle('mining:generatetoaddress', async (_e, { synorixCliPath, nblocks, address }) => {
   try {
     const wr = await waitForRPCReady(synorixCliPath);

@@ -38,6 +38,8 @@ contextBridge.exposeInMainWorld('synorix', {
   walletSend: (synorixCliPath, address, amount) =>
     ipcRenderer.invoke('wallet:send', { synorixCliPath, address, amount }),
   walletInfo: () => ipcRenderer.invoke('wallet:info'),
+  walletTransactions: (synorixCliPath, count) =>
+    ipcRenderer.invoke('wallet:transactions', { synorixCliPath, count }),
 
   miningGenerate: (synorixCliPath, nblocks, address) =>
     ipcRenderer.invoke('mining:generatetoaddress', { synorixCliPath, nblocks, address }),

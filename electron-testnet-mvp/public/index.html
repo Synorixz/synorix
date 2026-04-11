@@ -18,9 +18,12 @@
           <p class="tagline">Node &middot; Wallet &middot; Mining</p>
         </div>
       </div>
-      <div class="header-badges">
-        <span id="remoteBadge" class="badge badge-info">Remote VPS</span>
-        <span id="nodeBadge" class="badge badge-off">Offline</span>
+      <div class="header-right">
+        <div class="header-badges">
+          <span id="remoteBadge" class="badge badge-info">Remote VPS</span>
+          <span id="nodeBadge" class="badge badge-off">Offline</span>
+        </div>
+        <button type="button" class="icon-btn" id="btnSettings" title="Settings">&#9881;</button>
       </div>
     </header>
 
@@ -53,13 +56,20 @@
           <span class="stat-value" id="stMining">Idle</span>
         </div>
       </div>
+      <div class="stat-card" id="cardPeers">
+        <div class="stat-icon"><span class="stat-emoji">&#8644;</span></div>
+        <div class="stat-body">
+          <span class="stat-label">Peers</span>
+          <span class="stat-value" id="stPeers">&mdash;</span>
+        </div>
+      </div>
     </section>
 
     <section class="panel actions" id="panelActions">
       <div class="action-group">
         <h2>Node</h2>
         <div class="btn-row">
-          <button type="button" class="primary" id="btnStartNode">Connect to Node</button>
+          <button type="button" class="primary" id="btnStartNode"><span class="btn-text">Connect to Node</span><span class="spinner" hidden></span></button>
           <button type="button" class="ghost" id="btnStopNode">Disconnect</button>
         </div>
         <p class="hint" id="stIbd">&mdash;</p>
@@ -73,11 +83,17 @@
         </div>
         <div class="wallet-id-box">
           <span class="addr-label">Your Wallet ID</span>
-          <code id="walletIdDisplay">&mdash;</code>
+          <div class="copy-row">
+            <code id="walletIdDisplay">&mdash;</code>
+            <button type="button" class="copy-btn" id="btnCopyWalletId" title="Copy">&#128203;</button>
+          </div>
         </div>
         <div class="addr-box">
           <span class="addr-label">Latest Address</span>
-          <code id="lastAddr">&mdash;</code>
+          <div class="copy-row">
+            <code id="lastAddr">&mdash;</code>
+            <button type="button" class="copy-btn" id="btnCopyAddr" title="Copy">&#128203;</button>
+          </div>
         </div>
       </div>
 
@@ -90,7 +106,7 @@
           <input type="text" id="mineAddr" placeholder="Click 'New Address' or paste one" />
         </div>
         <div class="btn-row">
-          <button type="button" class="accent" id="btnMine">Mine Once</button>
+          <button type="button" class="accent" id="btnMine"><span class="btn-text">Mine Once</span><span class="spinner" hidden></span></button>
           <button type="button" class="primary" id="btnAutoMine">Start Auto Mining</button>
         </div>
       </div>
@@ -104,8 +120,27 @@
           <input type="number" id="sendAmount" min="0.00000001" step="0.00000001" value="1" />
         </div>
         <div class="btn-row">
-          <button type="button" class="accent" id="btnSend">Send</button>
+          <button type="button" class="accent" id="btnSend"><span class="btn-text">Send</span><span class="spinner" hidden></span></button>
         </div>
+      </div>
+    </section>
+
+    <section class="panel chart-panel">
+      <h2>Balance History (Session)</h2>
+      <canvas id="balanceChart" height="140"></canvas>
+    </section>
+
+    <section class="panel tx-panel">
+      <h2>Recent Transactions</h2>
+      <div class="tx-table-wrap">
+        <table class="tx-table" id="txTable">
+          <thead>
+            <tr><th>Date</th><th>Type</th><th>Amount</th><th>Address</th><th>Conf.</th></tr>
+          </thead>
+          <tbody id="txBody">
+            <tr><td colspan="5" class="tx-empty">No transactions yet</td></tr>
+          </tbody>
+        </table>
       </div>
     </section>
 
@@ -115,6 +150,35 @@
     </section>
 
   </div>
+
+  <div id="toastContainer"></div>
+
+  <div class="modal-overlay" id="settingsModal" hidden>
+    <div class="modal-card">
+      <h2>Settings</h2>
+      <div class="modal-field">
+        <label for="setRpcUrl">RPC URL</label>
+        <input type="text" id="setRpcUrl" placeholder="http://IP:PORT" />
+      </div>
+      <div class="modal-field">
+        <label for="setRpcUser">RPC User</label>
+        <input type="text" id="setRpcUser" placeholder="username" />
+      </div>
+      <div class="modal-field">
+        <label for="setRpcPass">RPC Password</label>
+        <div class="pass-row">
+          <input type="password" id="setRpcPass" placeholder="password" />
+          <button type="button" class="icon-btn small" id="btnTogglePass">&#128065;</button>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="primary" id="btnSaveSettings">Save</button>
+        <button type="button" class="ghost" id="btnCloseSettings">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="chart.umd.js"></script>
   <script src="renderer.js"></script>
 </body>
 </html>
