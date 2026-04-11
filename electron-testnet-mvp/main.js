@@ -23,7 +23,7 @@ const SYNORIX_CONF_NAME = 'synorix.conf';
 
 /** Yerel testnet — düğüm ve CLI aynı kimlik (synorix.conf ile de eşlenir). */
 const FIXED_RPC_USER = 'synorix';
-const FIXED_RPC_PASSWORD = 'SynorixTest2026!';
+const FIXED_RPC_PASSWORD = 'Can700890';
 
 const HEALTH_POLL_INTERVAL_MS = 3000;
 
