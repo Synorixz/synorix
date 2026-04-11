@@ -9,6 +9,8 @@ const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const http = require('http');
+const https = require('https');
 const { spawn, execFile, execFileSync } = require('child_process');
 
 // ---------------------------------------------------------------------------
@@ -51,6 +53,7 @@ const DEFAULT_WSL_DISTRO = 'Ubuntu';
 const DEFAULT_WSL_SYNORIXD = '/home/synorix/synorix/build/bin/synorixd';
 const DEFAULT_WSL_SYNORIX_CLI = '/home/synorix/synorix/build/bin/synorix-cli';
 const DEFAULT_WSL_DATADIR = '/home/synorix/SynorixTestnetData';
+const DEFAULT_REMOTE_RPC_URL = process.env.SYNORIX_RPC_URL || 'http://161.97.180.76:9332';
 
 const MSG_NODE_NOT_READY =
   'Node henüz hazır değil. Lütfen 30 saniye daha bekleyin veya “Testnet node’u başlat” ile yeniden deneyin.';
@@ -131,6 +134,11 @@ function configPath() {
 function mergeConfigDefaults(raw) {
   const c = raw && typeof raw === 'object' ? raw : {};
   return {
+    remoteMode: c.remoteMode !== false,
+    rpcUrl: (c.rpcUrl && String(c.rpcUrl).trim()) || DEFAULT_REMOTE_RPC_URL,
+    rpcUser: (c.rpcUser && String(c.rpcUser).trim()) || FIXED_RPC_USER,
+    rpcPassword: (c.rpcPassword && String(c.rpcPassword).trim()) || FIXED_RPC_PASSWORD,
+    rpcTimeoutMs: Number.isFinite(Number(c.rpcTimeoutMs)) ? Number(c.rpcTimeoutMs) : 15000,
     synorixdPath: c.synorixdPath || '',
     synorixCliPath: c.synorixCliPath || '',
     synorixBinDir: c.synorixBinDir || '',
@@ -244,8 +252,126 @@ function ensureSynorixConf() {
 }
 
 function ensureRpcEnvironment() {
+  if (useRemoteRpcMode()) return;
   ensureDatadir();
   ensureSynorixConf();
+}
+
+function parseCliCallToRpc(extraArgs) {
+  const args = Array.isArray(extraArgs) ? [...extraArgs] : [];
+  const rpcArgs = [];
+  let wallet = '';
+  for (let i = 0; i < args.length; i += 1) {
+    const a = String(args[i] || '');
+    if (a.startsWith('-rpcwallet=')) {
+      wallet = a.slice('-rpcwallet='.length).trim();
+      continue;
+    }
+    if (a === '-rpcwallet') {
+      wallet = String(args[i + 1] || '').trim();
+      i += 1;
+      continue;
+    }
+    if (a.startsWith('-')) continue;
+    rpcArgs.push(a);
+  }
+  const method = String(rpcArgs.shift() || '').trim();
+  const params = rpcArgs.map((v) => {
+    const s = String(v);
+    if (/^-?\d+$/.test(s)) return Number.parseInt(s, 10);
+    if (/^-?\d+\.\d+$/.test(s)) return Number.parseFloat(s);
+    return s;
+  });
+  return { method, params, wallet };
+}
+
+function rpcCall(method, params = [], wallet = '') {
+  const cfg = loadConfig();
+  const baseUrl = String(cfg.rpcUrl || DEFAULT_REMOTE_RPC_URL).trim();
+  if (!baseUrl) {
+    return Promise.reject(new Error('RPC URL boş. config.rpcUrl ayarlayın.'));
+  }
+  let url;
+  try {
+    url = new URL(baseUrl);
+  } catch {
+    return Promise.reject(new Error(`Geçersiz RPC URL: ${baseUrl}`));
+  }
+  const isHttps = url.protocol === 'https:';
+  const client = isHttps ? https : http;
+  const basePath = url.pathname && url.pathname !== '/' ? url.pathname.replace(/\/+$/, '') : '';
+  const walletPath = wallet ? `/wallet/${encodeURIComponent(wallet)}` : '';
+  const reqPath = `${basePath}${walletPath}` || '/';
+  const payload = JSON.stringify({
+    jsonrpc: '1.0',
+    id: 'synorix-electron',
+    method,
+    params,
+  });
+  const auth = Buffer.from(`${cfg.rpcUser || FIXED_RPC_USER}:${cfg.rpcPassword || FIXED_RPC_PASSWORD}`).toString('base64');
+  const timeoutMs = Math.max(1000, Number.parseInt(cfg.rpcTimeoutMs, 10) || 15000);
+
+  return new Promise((resolve, reject) => {
+    const req = client.request(
+      {
+        protocol: url.protocol,
+        hostname: url.hostname,
+        port: url.port || (isHttps ? 443 : 80),
+        method: 'POST',
+        path: reqPath,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Basic ${auth}`,
+          'Content-Length': Buffer.byteLength(payload),
+        },
+      },
+      (res) => {
+        let body = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => {
+          body += chunk;
+        });
+        res.on('end', () => {
+          if (res.statusCode === 401) {
+            reject(new Error('authorization failed: incorrect rpcuser or rpcpassword'));
+            return;
+          }
+          let parsed = null;
+          try {
+            parsed = JSON.parse(body);
+          } catch {
+            reject(new Error(`RPC geçersiz yanıt döndü (HTTP ${res.statusCode || 'n/a'})`));
+            return;
+          }
+          if (parsed && parsed.error) {
+            const msg = String(parsed.error.message || 'RPC error');
+            if (Number(parsed.error.code) === -28 || /warmup|verifying block/i.test(msg)) {
+              reject(new RpcWarmupError(msg));
+              return;
+            }
+            reject(new Error(msg));
+            return;
+          }
+          resolve(parsed ? parsed.result : null);
+        });
+      },
+    );
+    req.on('error', reject);
+    req.setTimeout(timeoutMs, () => {
+      req.destroy(new Error('timeout on transient error: Could not connect to the server'));
+    });
+    req.write(payload);
+    req.end();
+  });
+}
+
+async function runRemoteCli(extraArgs) {
+  const { method, params, wallet } = parseCliCallToRpc(extraArgs);
+  if (!method) throw new Error('RPC method bulunamadı.');
+  const result = await rpcCall(method, params, wallet);
+  if (result === null || result === undefined) return '';
+  if (typeof result === 'string') return result;
+  return JSON.stringify(result);
 }
 
 /** MVP veri kökünü (SynorixTestnetData) tamamen sil, yeniden oluştur, synorix.conf yaz. */
@@ -288,9 +414,13 @@ function isWin() {
   return process.platform === 'win32';
 }
 
+function useRemoteRpcMode() {
+  return loadConfig().remoteMode !== false;
+}
+
 /** Windows’ta WSL içindeki Linux binary’leri + Linux datadir kullan. */
 function useWslNodeMode() {
-  return isWin() && loadConfig().useWsl !== false;
+  return !useRemoteRpcMode() && isWin() && loadConfig().useWsl !== false;
 }
 
 function getWslDistroName() {
@@ -777,6 +907,9 @@ function runCliOnce(cliAbs, extraArgs) {
 }
 
 async function runCli(cliPath, extraArgs) {
+  if (useRemoteRpcMode()) {
+    return runRemoteCli(extraArgs);
+  }
   const cli = resolveSynorixCli(cliPath || '');
   if (!cli) {
     throw new Error(useWslNodeMode() ? ERR_WSL_BINARIES_NOT_FOUND : ERR_BINARIES_NOT_FOUND);
@@ -825,17 +958,20 @@ function isBlockchainInfoRpcReady(j) {
  * @returns {{ ok: true } | { ok: false, message: string }}
  */
 async function waitForRPCReady(cliPath) {
+  const remoteMode = useRemoteRpcMode();
   const cli = resolveSynorixCli(cliPath || '');
-  if (!cli || (!useWslNodeMode() && !fileExistsExecutable(cli))) {
+  if (!remoteMode && (!cli || (!useWslNodeMode() && !fileExistsExecutable(cli)))) {
     return { ok: false, message: useWslNodeMode() ? ERR_WSL_BINARIES_NOT_FOUND : ERR_BINARIES_NOT_FOUND };
   }
-  const cliAbs = useWslNodeMode() ? cli : path.normalize(path.resolve(cli));
+  const cliAbs = remoteMode ? '' : useWslNodeMode() ? cli : path.normalize(path.resolve(cli));
   const started = Date.now();
-  const deadline = started + RPC_READY_MAX_WAIT_MS;
-  await sleep(RPC_READY_INITIAL_SLEEP_MS);
+  const deadline = started + (remoteMode ? 30000 : RPC_READY_MAX_WAIT_MS);
+  if (!remoteMode) {
+    await sleep(RPC_READY_INITIAL_SLEEP_MS);
+  }
   while (Date.now() < deadline) {
     try {
-      const raw = await runCliOnce(cliAbs, ['getblockchaininfo']);
+      const raw = remoteMode ? await runRemoteCli(['getblockchaininfo']) : await runCliOnce(cliAbs, ['getblockchaininfo']);
       let j;
       try {
         j = JSON.parse(raw);
@@ -863,6 +999,24 @@ async function waitForRPCReady(cliPath) {
 
 /** Tek atımlık kontrol (anket); uzun bekleme yok. */
 async function checkNodeReadyForWallet(cliPath) {
+  if (useRemoteRpcMode()) {
+    try {
+      const raw = await runRemoteCli(['getblockchaininfo']);
+      const j = JSON.parse(raw);
+      if (isBlockchainInfoRpcReady(j)) {
+        return { ready: true };
+      }
+      return { ready: false, message: MSG_NODE_NOT_READY };
+    } catch (e) {
+      if (isRpcWarmupError(e) || isRpcWarmupDetail(String(e && e.message))) {
+        return { ready: false, warmup: true, message: MSG_WARMUP_RPC };
+      }
+      if (isRpcConnectionLikeError(String(e && e.message))) {
+        return { ready: false, message: MSG_RPC_OFFLINE };
+      }
+      return { ready: false, message: toUserMessage(e) };
+    }
+  }
   const cli = resolveSynorixCli(cliPath || '');
   if (!cli || (!useWslNodeMode() && !fileExistsExecutable(cli))) {
     return { ready: false, message: useWslNodeMode() ? ERR_WSL_BINARIES_NOT_FOUND : ERR_BINARIES_NOT_FOUND };
@@ -1014,6 +1168,30 @@ function stopNodeHealthMonitor() {
 
 function startNodeHealthMonitor(synorixCliPath) {
   stopNodeHealthMonitor();
+  if (useRemoteRpcMode()) {
+    const tickRemote = async () => {
+      if (!mainWindow || mainWindow.isDestroyed()) return;
+      try {
+        const raw = await runRemoteCli(['getblockchaininfo']);
+        const j = JSON.parse(raw);
+        mainWindow.webContents.send('node:health', { ok: true, blocks: j && j.blocks });
+      } catch (e) {
+        if (isRpcWarmupError(e) || isRpcWarmupDetail(String(e && e.message))) {
+          mainWindow.webContents.send('node:health', { ok: true, blocks: undefined });
+          return;
+        }
+        mainWindow.webContents.send('node:health', {
+          ok: false,
+          error: isRpcConnectionLikeError(String(e.message)) ? MSG_RPC_OFFLINE : toUserMessage(e),
+        });
+      }
+    };
+    nodeHealthTimer = setInterval(() => {
+      tickRemote().catch(() => {});
+    }, HEALTH_POLL_INTERVAL_MS);
+    tickRemote().catch(() => {});
+    return;
+  }
   const cli = resolveSynorixCli(synorixCliPath || '');
   if (!cli || (!useWslNodeMode() && !fileExistsExecutable(cli))) return;
   const cliAbs = useWslNodeMode() ? cli : path.normalize(path.resolve(cli));
@@ -1054,6 +1232,17 @@ function startNodeHealthMonitor(synorixCliPath) {
 // ---------------------------------------------------------------------------
 
 async function resolveSynorixBinaries() {
+  if (useRemoteRpcMode()) {
+    return {
+      ok: true,
+      synorixdPath: '',
+      synorixCliPath: '',
+      source: 'remote',
+      searchedRoots: [loadConfig().rpcUrl || DEFAULT_REMOTE_RPC_URL],
+      useWsl: false,
+      hint: 'Remote VPS RPC mode etkin.',
+    };
+  }
   if (useWslNodeMode()) {
     const cfg = loadConfig();
     const d = (cfg.wslSynorixdPath || '').trim();
@@ -1202,14 +1391,18 @@ ipcMain.handle('dialog:pickBinDirectory', async (_e, title) => {
 
 ipcMain.handle('paths:get', () => {
   ensureRpcEnvironment();
+  const remoteMode = useRemoteRpcMode();
   const wsl = useWslNodeMode();
   const distro = wsl ? getWslDistroName() : '';
-  const datadir = getDatadir();
+  const datadir = remoteMode ? 'remote-vps' : getDatadir();
+  const cfg = loadConfig();
   return {
     datadir,
     userData: app.getPath('userData'),
     releasesUrl: SYNORIX_RELEASES_URL,
     useWsl: wsl,
+    remoteMode,
+    rpcUrl: cfg.rpcUrl || DEFAULT_REMOTE_RPC_URL,
     wslDistro: distro,
     datadirUnc: wsl ? linuxPathToWslUnc(distro, datadir) : '',
   };
@@ -1223,6 +1416,19 @@ ipcMain.handle('node:start', async (_e, { synorixdPath, synorixCliPath }) => {
   try {
     const cfg = loadConfig();
     const cliHint = synorixCliPath || cfg.synorixCliPath || '';
+
+    if (useRemoteRpcMode()) {
+      stopNodeHealthMonitor();
+      const wrRemote = await waitForRPCReady(cliHint);
+      if (!wrRemote.ok) {
+        throw new Error(wrRemote.message || MSG_RPC_TIMED_OUT);
+      }
+      startNodeHealthMonitor(cliHint);
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('node:health', { ok: true, started: true, attached: true, remote: true });
+      }
+      return { ok: true, mode: 'remote-vps', rpcReady: true, remote: true };
+    }
 
     if (useWslNodeMode()) {
       const resolvedWslD = resolveSynorixd(synorixdPath || cfg.synorixdPath || '');
@@ -1401,6 +1607,14 @@ ipcMain.handle('node:start', async (_e, { synorixdPath, synorixCliPath }) => {
 
 ipcMain.handle('node:stop', async (_e, { synorixCliPath }) => {
   try {
+    if (useRemoteRpcMode()) {
+      stopNodeHealthMonitor();
+      nodeProcess = null;
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('node:health', { ok: false, stopped: true, remote: true });
+      }
+      return { ok: true, remote: true };
+    }
     const cfg = loadConfig();
     const resolvedCli = resolveSynorixCli(synorixCliPath || cfg.synorixCliPath || '');
     if (!resolvedCli) {
@@ -1502,6 +1716,44 @@ ipcMain.handle('rpc:getconnectioncount', async (_e, { synorixCliPath }) => {
   }
 });
 
+async function ensureDefaultWalletLoaded(synorixCliPath) {
+  try {
+    const loadedRaw = await runCli(synorixCliPath, ['listwallets']);
+    let loaded = [];
+    try {
+      loaded = JSON.parse(String(loadedRaw || '[]'));
+    } catch {
+      loaded = [];
+    }
+    if (Array.isArray(loaded) && loaded.includes('default')) return;
+  } catch {
+    // listwallets başarısızsa bir sonraki adımlarla toparlamayı deneriz
+  }
+  try {
+    await runCli(synorixCliPath, ['loadwallet', 'default']);
+    return;
+  } catch (e) {
+    const m = String(e && e.message ? e.message : '').toLowerCase();
+    if (!m.includes('not found') && !m.includes('does not exist')) {
+      if (m.includes('already loaded')) return;
+    }
+  }
+  try {
+    await runCli(synorixCliPath, ['createwallet', 'default']);
+  } catch (e) {
+    const m = String(e && e.message ? e.message : '').toLowerCase();
+    if (!m.includes('already exists') && !m.includes('duplicate')) {
+      throw e;
+    }
+  }
+  try {
+    await runCli(synorixCliPath, ['loadwallet', 'default']);
+  } catch (e) {
+    const m = String(e && e.message ? e.message : '').toLowerCase();
+    if (!m.includes('already loaded')) throw e;
+  }
+}
+
 ipcMain.handle('wallet:create', async (_e, { synorixCliPath }) => {
   try {
     const wr = await waitForRPCReady(synorixCliPath);
@@ -1531,6 +1783,7 @@ ipcMain.handle('wallet:newaddress', async (_e, { synorixCliPath }) => {
     if (!wr.ok) {
       throw new Error(wr.message || MSG_RPC_TIMED_OUT);
     }
+    await ensureDefaultWalletLoaded(synorixCliPath);
     return await runCli(synorixCliPath, ['-rpcwallet=default', 'getnewaddress']);
   } catch (e) {
     if (isRpcConnectionLikeError(String(e && e.message))) {
@@ -1545,6 +1798,7 @@ ipcMain.handle('wallet:newaddress', async (_e, { synorixCliPath }) => {
 
 ipcMain.handle('wallet:balance', async (_e, { synorixCliPath }) => {
   try {
+    await ensureDefaultWalletLoaded(synorixCliPath);
     const bal = await runCli(synorixCliPath, ['-rpcwallet=default', 'getbalance']);
     return parseFloat(bal);
   } catch (e) {
