@@ -624,6 +624,30 @@ if (typeof window.synorix.onNodeHealth === 'function') {
   if (r.ok) {
     log(r.source === 'remote' ? 'Remote RPC mode active.' : 'Binaries found.');
     startPoll();
+    if (paths.remoteMode) {
+      log('Auto-connecting to VPS node...');
+      applyNodeRunningWarmupUi();
+      nodeStartInProgress = true;
+      updateWalletMiningFromNodeState('starting');
+      try {
+        const start = await window.synorix.nodeStart(r.synorixdPath, r.synorixCliPath);
+        if (start.rpcReady) {
+          log(start.remote ? 'Connected to remote VPS node.' : 'Node ready.');
+          if (start.walletId) {
+            $('walletIdDisplay').textContent = start.walletId;
+            log(`Wallet loaded: ${start.walletId}`);
+          }
+          setNodeRunningUi(true, { fullyReady: true });
+          updateWalletMiningFromNodeState('ready');
+          showToast('Connected to VPS node.', 'success');
+        }
+      } catch (e) {
+        log(humanError(e), true);
+      } finally {
+        nodeStartInProgress = false;
+        void refreshStatus();
+      }
+    }
   } else {
     log('Could not initialize. Check configuration.', true);
   }
