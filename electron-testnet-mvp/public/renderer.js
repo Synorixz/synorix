@@ -1,18 +1,16 @@
 const $ = (id) => document.getElementById(id);
-
 const logEl = $('log');
 
-const MSG_NODE_START_SKIP_GENESIS = 'Node başlatılıyor... (Genesis doğrulama atlandı)';
-const MSG_WSL_NODE_STARTING = 'WSL üzerinden node başlatılıyor (Linux synorixd + Linux veri klasörü).';
-const MSG_RPC_PREPARING_RETRY = 'RPC hazırlanıyor, lütfen 10 saniye daha bekleyin.';
-const MSG_RPC_CONN_FAILED =
-  'RPC bağlantısı kurulamadı. Node\'u durdurup tekrar başlatın.';
-/** Ana süreç IPC’de ASCII hata döndürebilir; panelde Türkçe özet (humanError eşler). */
-const MSG_RPC_TIMED_OUT =
-  'RPC zaman aşımına uğradı. Gerekirse Görev Yöneticisi’nden synorixd’i kapatıp «Testnet node’u başlat»a tekrar basın.';
-/** “Testnet node’u başlat” sonrası paneli zorunlu “Node hazır” yap (main wait’ten bağımsız). */
+const AUTO_MINING_INTERVAL_MS = 150000;
 const NODE_FORCE_READY_MS = 40000;
 
+let pollTimer = null;
+let cfg = { synorixdPath: '', synorixCliPath: '', synorixBinDir: '' };
+let miningBusy = false;
+let lastMiningText = 'Idle';
+let autoMiningEnabled = false;
+let autoMiningTimer = null;
+let nodeStartInProgress = false;
 let nodeForceReadyTimer = null;
 
 function clearNodeForceReadyTimer() {
@@ -22,70 +20,43 @@ function clearNodeForceReadyTimer() {
   }
 }
 
-let pollTimer = null;
-let cfg = { synorixdPath: '', synorixCliPath: '', synorixBinDir: '' };
-let miningBusy = false;
-let lastMiningText = 'Pasif';
-
-/** node:start IPC beklerken cüzdan/mining kapalı */
-let nodeStartInProgress = false;
-
-function setNodeStartInProgress(on) {
-  nodeStartInProgress = Boolean(on);
-}
-
 function humanError(err) {
   const raw = String(err?.message || err || '');
-  if (raw.includes('Node henüz hazır değil')) {
-    return raw;
-  }
   const m = raw.toLowerCase();
   if (m.includes('could not connect') || m.includes('connection refused') || m.includes('econnrefused')) {
-    return 'Node henüz hazır değil. Lütfen 30 saniye daha bekleyin.';
+    return 'Node is not ready. Please wait ~30 seconds.';
   }
   if (m.includes('method not found') && m.includes('generatetoaddress')) {
-    return 'Mining RPC bu düğümde kapalı olabilir veya cüzdan devre dışı derleme kullanılıyor.';
+    return 'Mining RPC is disabled on this node or wallet support is missing.';
   }
   if (m.includes('invalid address')) {
-    return 'Geçersiz adres. Testnet adresi (ör. tsnrx1…) kullanın.';
+    return 'Invalid address. Use a testnet address (e.g. tsnrx1...).';
   }
   if (m.includes('wallet') && m.includes('not found')) {
-    return 'Cüzdan yok. Önce “Cüzdan oluştur” deyin.';
+    return 'Wallet not found. Click "Create Wallet" first.';
   }
   if (m.includes('empty wallet')) {
-    return 'Cüzdan boş veya adres üretilemedi. Önce cüzdan oluşturun.';
+    return 'Wallet is empty or address could not be generated. Create a wallet first.';
   }
   if (m.includes('verifying block') || m.includes('error code: -28') || m.includes('in warmup')) {
-    return 'RPC henüz hazır değil; birkaç saniye sonra tekrar deneyin.';
+    return 'RPC is warming up. Try again in a few seconds.';
   }
-  if (raw.includes('RPC hazırlanıyor')) {
-    return MSG_RPC_PREPARING_RETRY;
+  if (m.includes('rpc timed out') || m.includes('timeout')) {
+    return 'RPC timed out. Try stopping and restarting the node connection.';
   }
-  if (raw.includes('RPC bağlantısı kurulamadı')) {
-    return MSG_RPC_CONN_FAILED;
+  if (m.includes('authorization failed') || m.includes('incorrect rpcuser')) {
+    return 'RPC authentication failed. Check rpcUser/rpcPassword in config.';
   }
-  if (
-    raw.includes('Node\'u durdurup tekrar başlatın') ||
-    raw.includes("Node'u durdurup tekrar başlatın") ||
-    m.includes('rpc timed out')
-  ) {
-    return MSG_RPC_TIMED_OUT;
+  if (m.includes('insufficient funds') || m.includes('not enough')) {
+    return 'Insufficient funds. Mine some blocks first to get testnet coins.';
   }
-  return raw || 'Beklenmeyen bir hata oluştu.';
+  return raw || 'An unexpected error occurred.';
 }
 
 function log(msg, isErr = false) {
-  const line = `[${new Date().toLocaleTimeString('tr-TR')}] ${msg}\n`;
-  logEl.textContent = line + logEl.textContent.slice(0, 4000);
+  const line = `[${new Date().toLocaleTimeString()}] ${msg}\n`;
+  logEl.textContent = line + logEl.textContent.slice(0, 5000);
   logEl.style.color = isErr ? 'var(--err)' : 'var(--muted)';
-}
-
-/** Başlat sonrası 20 sn dolmadan: rozet “Node çalışıyor”. */
-function applyNodeRunningWarmupUi() {
-  $('dotNode').className = 'status-dot on';
-  $('stNodeRun').textContent = 'Node çalışıyor';
-  $('nodeBadge').textContent = 'Node çalışıyor';
-  $('nodeBadge').className = 'badge badge-warn';
 }
 
 function setNodeRunningUi(running, opts = {}) {
@@ -93,28 +64,36 @@ function setNodeRunningUi(running, opts = {}) {
   const dot = $('dotNode');
   const val = $('stNodeRun');
   if (running) {
-    dot.className = 'status-dot on';
-    val.textContent = fullyReady ? 'Node hazır' : 'Node çalışıyor';
-    if (fullyReady) {
-      $('nodeBadge').textContent = 'Node hazır';
-      $('nodeBadge').className = 'badge badge-ok';
-    }
+    dot.className = fullyReady ? 'status-dot on' : 'status-dot warn';
+    val.textContent = fullyReady ? 'Connected' : 'Connecting...';
+    $('nodeBadge').textContent = fullyReady ? 'Online' : 'Connecting';
+    $('nodeBadge').className = fullyReady ? 'badge badge-ok' : 'badge badge-warn';
   } else {
     dot.className = 'status-dot off';
-    val.textContent = 'Durdu';
-    $('nodeBadge').textContent = 'Node RPC: yok';
+    val.textContent = 'Stopped';
+    $('nodeBadge').textContent = 'Offline';
     $('nodeBadge').className = 'badge badge-off';
   }
 }
 
+function applyNodeRunningWarmupUi() {
+  $('dotNode').className = 'status-dot warn';
+  $('stNodeRun').textContent = 'Connecting...';
+  $('nodeBadge').textContent = 'Connecting';
+  $('nodeBadge').className = 'badge badge-warn';
+}
+
 function formatWalletBalance(bal) {
-  if (bal === null) return '…';
+  if (bal === null) return '...';
   if (Number.isFinite(bal)) return `${bal.toFixed(8)} SNRX`;
-  return '—';
+  return '\u2014';
 }
 
 function setWalletMiningActionsEnabled(enabled, titleWhenDisabled = '') {
-  const ids = ['btnCreateWallet', 'btnNewAddr', 'btnMine', 'mineN', 'mineAddr'];
+  const ids = [
+    'btnCreateWallet', 'btnNewAddr', 'btnMine', 'mineN', 'mineAddr',
+    'btnAutoMine', 'btnSend', 'sendTo', 'sendAmount',
+  ];
   for (const id of ids) {
     const el = $(id);
     if (!el) continue;
@@ -123,76 +102,57 @@ function setWalletMiningActionsEnabled(enabled, titleWhenDisabled = '') {
   }
 }
 
+function stopAutoMining(reason = '') {
+  if (autoMiningTimer) {
+    clearInterval(autoMiningTimer);
+    autoMiningTimer = null;
+  }
+  const wasOn = autoMiningEnabled;
+  autoMiningEnabled = false;
+  updateAutoMineButton();
+  if (wasOn && reason) log(reason);
+}
+
+function updateAutoMineButton() {
+  const btn = $('btnAutoMine');
+  if (!btn) return;
+  if (autoMiningEnabled) {
+    btn.textContent = 'Stop Auto Mining';
+    btn.className = 'danger';
+  } else {
+    btn.textContent = 'Start Auto Mining';
+    btn.className = 'primary';
+  }
+}
+
 function updateWalletMiningFromNodeState(state) {
   if (state === 'ready') {
     setWalletMiningActionsEnabled(true);
   } else if (state === 'starting') {
-    setWalletMiningActionsEnabled(false, 'Node başlatılıyor / RPC hazırlanıyor…');
+    setWalletMiningActionsEnabled(false, 'Node is starting / RPC warming up...');
   } else {
-    setWalletMiningActionsEnabled(false, 'Önce “Testnet node’u başlat” deyin.');
+    stopAutoMining('Node is not ready, auto mining stopped.');
+    setWalletMiningActionsEnabled(false, 'Connect to node first.');
   }
 }
 
-function showBinUi(result) {
-  const ok = result.ok;
-  $('binOk').hidden = !ok;
-  $('binErr').hidden = ok;
-  if (ok) {
-    $('pathDShow').textContent = result.synorixdPath;
-    $('pathCliShow').textContent = result.synorixCliPath;
-    $('pathD').value = result.synorixdPath;
-    $('pathCli').value = result.synorixCliPath;
-    cfg.synorixdPath = result.synorixdPath;
-    cfg.synorixCliPath = result.synorixCliPath;
-  } else {
-    $('binErrHint').textContent = result.hint || 'Dosyalar bulunamadı.';
-    $('pathD').value = '';
-    $('pathCli').value = '';
-    cfg.synorixdPath = '';
-    cfg.synorixCliPath = '';
+function setMiningUi() {
+  const dot = $('dotMine');
+  const val = $('stMining');
+  if (miningBusy) {
+    dot.className = 'status-dot warn';
+    val.textContent = 'Processing...';
+    return;
   }
+  if (autoMiningEnabled) {
+    dot.className = 'status-dot pulse';
+    val.textContent = 'Auto (150s)';
+    return;
+  }
+  dot.className = 'status-dot off';
+  val.textContent = lastMiningText;
 }
 
-async function refreshBinaries() {
-  const result = await window.synorix.binariesResolve();
-  showBinUi(result);
-  return result;
-}
-
-async function saveCfg() {
-  const prev = await window.synorix.configGet();
-  cfg = {
-    ...prev,
-    synorixdPath: $('pathD').value.trim(),
-    synorixCliPath: $('pathCli').value.trim(),
-  };
-  await window.synorix.configSet(cfg);
-}
-
-async function refreshPickedDirLabel() {
-  const c = await window.synorix.configGet();
-  const el = $('pickedBinDirLabel');
-  if (!el) return;
-  el.textContent = c.synorixBinDir ? `Kayıtlı: ${c.synorixBinDir}` : '';
-}
-
-async function pickBuildBinFolder() {
-  const dir = await window.synorix.pickBinDirectory(
-    'synorixd ve synorix-cli dosyalarının bulunduğu klasörü seçin (örn. build/bin)',
-  );
-  if (!dir) return;
-  const prev = await window.synorix.configGet();
-  await window.synorix.configSet({ ...prev, synorixBinDir: dir });
-  await refreshPickedDirLabel();
-  const r = await refreshBinaries();
-  log(
-    r.ok ? `Binary bulundu (${r.synorixdPath})` : 'Seçilen klasörde synorixd / synorix-cli bulunamadı.',
-    !r.ok,
-  );
-  if (r.ok) startPoll();
-}
-
-/** main.js isBlockchainInfoRpcReady ile aynı: yalnizca blocks sayisal >= 0. */
 function blockchainInfoLooksRpcReady(info) {
   if (!info || info._offline || info._warmup) return false;
   if (!('blocks' in info)) return false;
@@ -200,15 +160,23 @@ function blockchainInfoLooksRpcReady(info) {
   return Number.isFinite(b) && b >= 0;
 }
 
+async function refreshBinaries() {
+  const result = await window.synorix.binariesResolve();
+  if (result.ok) {
+    cfg.synorixdPath = result.synorixdPath;
+    cfg.synorixCliPath = result.synorixCliPath;
+  }
+  return result;
+}
+
 async function refreshStatus() {
   const r = await window.synorix.binariesResolve();
   if (!r.ok) {
-    setNodeStartInProgress(false);
+    nodeStartInProgress = false;
     setNodeRunningUi(false);
-    $('stConn').textContent = '—';
-    $('stBlocks').textContent = '—';
-    $('stIbd').textContent = '—';
-    $('nodeBadge').textContent = 'Binary yok';
+    $('stBlocks').textContent = '\u2014';
+    $('stIbd').textContent = '\u2014';
+    $('nodeBadge').textContent = 'No binaries';
     $('nodeBadge').className = 'badge badge-off';
     updateWalletMiningFromNodeState('off');
     return;
@@ -218,14 +186,11 @@ async function refreshStatus() {
   try {
     const info = await window.synorix.getBlockchainInfo(cfg.synorixCliPath);
     if (info && info._offline) {
-      setNodeStartInProgress(false);
+      nodeStartInProgress = false;
       setNodeRunningUi(false);
-      $('stConn').textContent = '—';
-      $('stBlocks').textContent = '—';
-      $('stIbd').textContent = '—';
-      $('stBal').textContent = '—';
-      $('nodeBadge').textContent = 'Node RPC: yok';
-      $('nodeBadge').className = 'badge badge-off';
+      $('stBlocks').textContent = '\u2014';
+      $('stIbd').textContent = '\u2014';
+      $('stBal').textContent = '\u2014';
       updateWalletMiningFromNodeState('off');
       setMiningUi();
       return;
@@ -240,33 +205,19 @@ async function refreshStatus() {
       setNodeRunningUi(true, { fullyReady: true });
     } else if (!warmup) {
       setNodeRunningUi(true, { fullyReady: false });
-      $('nodeBadge').textContent = 'Node çalışıyor';
-      $('nodeBadge').className = 'badge badge-warn';
     } else {
       applyNodeRunningWarmupUi();
     }
 
     if (warmup) {
-      $('stIbd').textContent = 'RPC başlangıç (warmup)…';
-      $('stBlocks').textContent = '…';
-      $('stConn').textContent = '—';
+      $('stIbd').textContent = 'RPC warming up...';
+      $('stBlocks').textContent = '...';
     } else {
       const vp = Number(info.verificationprogress);
-      const vpStr = Number.isFinite(vp) ? `${(vp * 100).toFixed(1)}%` : '—';
-      const ibd =
-        info.initialblockdownload === true
-          ? 'evet'
-          : info.initialblockdownload === false
-            ? 'hayır'
-            : '—';
-      $('stIbd').textContent = `Genesis doğrulama atlandı · ilerleme: ${vpStr} · IBD: ${ibd}`;
-      try {
-        const n = await window.synorix.getConnectionCount(cfg.synorixCliPath);
-        $('stConn').textContent = n != null && Number.isFinite(n) ? String(n) : '—';
-      } catch {
-        $('stConn').textContent = '—';
-      }
-      $('stBlocks').textContent = info.blocks != null ? String(info.blocks) : '—';
+      const vpStr = Number.isFinite(vp) ? `${(vp * 100).toFixed(1)}%` : '\u2014';
+      const ibd = info.initialblockdownload === true ? 'yes' : info.initialblockdownload === false ? 'no' : '\u2014';
+      $('stIbd').textContent = `Progress: ${vpStr} | IBD: ${ibd}`;
+      $('stBlocks').textContent = info.blocks != null ? String(info.blocks) : '\u2014';
     }
 
     if (nodeStartInProgress) {
@@ -281,14 +232,13 @@ async function refreshStatus() {
       const bal = await window.synorix.walletBalance(cfg.synorixCliPath);
       $('stBal').textContent = formatWalletBalance(bal);
     } catch {
-      $('stBal').textContent = 'cüzdan yok';
+      $('stBal').textContent = 'No wallet';
     }
   } catch {
-    setNodeStartInProgress(false);
+    nodeStartInProgress = false;
     setNodeRunningUi(false);
-    $('stConn').textContent = '—';
-    $('stBlocks').textContent = '—';
-    $('stIbd').textContent = '—';
+    $('stBlocks').textContent = '\u2014';
+    $('stIbd').textContent = '\u2014';
     updateWalletMiningFromNodeState('off');
   }
   setMiningUi();
@@ -296,21 +246,18 @@ async function refreshStatus() {
 
 function startPoll() {
   stopPoll();
-  pollTimer = setInterval(refreshStatus, 2000);
+  pollTimer = setInterval(refreshStatus, 2500);
   refreshStatus();
 }
 
 function stopPoll() {
-  if (pollTimer) {
-    clearInterval(pollTimer);
-    pollTimer = null;
-  }
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
 }
 
 async function requireBinaries() {
   const r = await refreshBinaries();
   if (!r.ok) {
-    log('synorixd ve synorix-cli bulunamadı. “Binary’leri indir” veya uygulama klasörüne kopyalayın.', true);
+    log('Could not resolve binaries or remote RPC configuration.', true);
     return null;
   }
   return r;
@@ -320,130 +267,61 @@ async function guardRpcReadyForWallet(cliPath) {
   if (typeof window.synorix.waitForRPCReady !== 'function') return true;
   const out = await window.synorix.waitForRPCReady(cliPath);
   if (!out.ok) {
-    log(out.message || MSG_RPC_TIMED_OUT, true);
+    log(out.message || 'RPC timed out.', true);
     return false;
   }
   return true;
 }
 
-function setMiningUi() {
-  const dot = $('dotMine');
-  const val = $('stMining');
-  if (miningBusy) {
-    dot.className = 'status-dot warn';
-    val.textContent = 'İşleniyor…';
+async function runMiningOnce(synorixCliPath, n, addr, source = 'manual') {
+  const out = await window.synorix.miningGenerate(synorixCliPath, n, addr);
+  if (out && out.warmup) {
+    log('RPC is warming up. Try again shortly.', true);
+    lastMiningText = 'Idle';
     return;
   }
-  dot.className = 'status-dot off';
-  val.textContent = lastMiningText;
+  const c = out.count ?? 0;
+  lastMiningText = `Idle (last: ${c} blocks)`;
+  log(`${source === 'auto' ? 'Auto mining' : 'Mining'} complete: ${c} block(s) generated.`);
 }
 
-$('btnPickBuildDir').addEventListener('click', pickBuildBinFolder);
-$('btnPickBuildDirErr').addEventListener('click', pickBuildBinFolder);
-
-$('btnRescan').addEventListener('click', async () => {
-  await refreshPickedDirLabel();
-  const r = await refreshBinaries();
-  log(r.ok ? 'Programlar bulundu.' : humanError({ message: r.hint }), !r.ok);
-  if (r.ok) startPoll();
-});
-
-$('btnRescan2').addEventListener('click', async () => {
-  await refreshPickedDirLabel();
-  const r = await refreshBinaries();
-  log(r.ok ? 'Programlar bulundu.' : 'Hâlâ bulunamadı.', !r.ok);
-  if (r.ok) startPoll();
-});
-
-$('btnDownloadBin').addEventListener('click', async () => {
-  try {
-    await window.synorix.openReleases();
-    log('GitHub Releases açıldı. İndirdikten sonra dosyaları uygulama yanına koyup “Tekrar dene” deyin.');
-  } catch (e) {
-    log(humanError(e), true);
-  }
-});
-
-$('btnPickD').addEventListener('click', async () => {
-  const p = await window.synorix.pickBinary('synorixd seç');
-  if (p) $('pathD').value = p;
-});
-
-$('btnPickCli').addEventListener('click', async () => {
-  const p = await window.synorix.pickBinary('synorix-cli seç');
-  if (p) $('pathCli').value = p;
-});
-
-$('btnSaveManual').addEventListener('click', async () => {
-  await saveCfg();
-  const r = await refreshBinaries();
-  if (r.ok) {
-    log('Manuel yollar kaydedildi.');
-    startPoll();
-  } else {
-    log('Her iki dosya da geçerli ve erişilebilir olmalı.', true);
-  }
-});
-
-$('btnOpenData').addEventListener('click', async () => {
-  await window.synorix.openDatadir();
-  const paths = await window.synorix.pathsGet();
-  if (paths.useWsl && paths.datadirUnc) {
-    log(`Veri klasörü (WSL): ${paths.datadir} — Explorer: ${paths.datadirUnc}`);
-  } else {
-    log(`Veri klasörü: ${paths.datadir}`);
-  }
-});
+// ---- Event Listeners ----
 
 $('btnStartNode').addEventListener('click', async () => {
   const r = await requireBinaries();
   if (!r) return;
-
   clearNodeForceReadyTimer();
-  setNodeStartInProgress(true);
+  nodeStartInProgress = true;
   applyNodeRunningWarmupUi();
-  $('stIbd').textContent = 'Genesis doğrulama atlandı · RPC bekleniyor…';
+  $('stIbd').textContent = 'Connecting to RPC...';
   updateWalletMiningFromNodeState('starting');
-  log(MSG_NODE_START_SKIP_GENESIS);
-  if (r.useWsl) {
-    log(MSG_WSL_NODE_STARTING);
-  }
-  log('Ana süreç: synorix.conf zorla yazılır; RPC için 40 sn bekleme + 2 sn yoklama (toplam tavan ~240 sn).');
+  log('Connecting to VPS node...');
 
   nodeForceReadyTimer = setTimeout(() => {
     nodeForceReadyTimer = null;
     setNodeRunningUi(true, { fullyReady: true });
     updateWalletMiningFromNodeState('ready');
-    setNodeStartInProgress(false);
-    log('Node hazır (40 sn — panel zorunlu güncellendi).');
+    nodeStartInProgress = false;
+    log('Node ready (force timeout reached).');
     void refreshStatus();
   }, NODE_FORCE_READY_MS);
 
   try {
     const start = await window.synorix.nodeStart(r.synorixdPath, r.synorixCliPath);
     if (start.rpcReady) {
-      if (start.datadirCleared) {
-        log('Veri klasörü sıfırlandı (temiz chainstate + synorix.conf).');
-      }
-      if (start.mode === 'attached-existing') {
-        log(start.wsl ? 'Mevcut synorixd (WSL): RPC hazır — Node hazır.' : 'Mevcut synorixd: RPC hazır — Node hazır.');
-      } else if (start.wsl) {
-        log('Node hazır (WSL) — RPC yanıt veriyor; cüzdan ve mining kullanılabilir.');
-      } else {
-        log('Node hazır — RPC yanıt veriyor; cüzdan ve mining kullanılabilir.');
-      }
+      log(start.remote ? 'Connected to remote VPS node. RPC is ready.' : 'Node ready. RPC is responding.');
       setNodeRunningUi(true, { fullyReady: true });
       updateWalletMiningFromNodeState('ready');
     } else {
-      log(`Düğüm başlatıldı (${start.mode}).`);
+      log(`Node started (mode: ${start.mode}).`);
     }
     startPoll();
   } catch (e) {
     clearNodeForceReadyTimer();
-    log(String(e?.message || e), true);
+    log(humanError(e), true);
     void refreshStatus();
   } finally {
-    setNodeStartInProgress(false);
+    nodeStartInProgress = false;
     void refreshStatus();
   }
 });
@@ -453,9 +331,10 @@ $('btnStopNode').addEventListener('click', async () => {
   if (!r) return;
   try {
     clearNodeForceReadyTimer();
+    stopAutoMining('Auto mining stopped (node disconnected).');
     await window.synorix.nodeStop(r.synorixCliPath);
-    setNodeStartInProgress(false);
-    log('Durdurma komutu gönderildi.');
+    nodeStartInProgress = false;
+    log('Disconnected from node.');
     refreshStatus();
   } catch (e) {
     log(humanError(e), true);
@@ -469,10 +348,10 @@ $('btnCreateWallet').addEventListener('click', async () => {
     if (!(await guardRpcReadyForWallet(r.synorixCliPath))) return;
     const res = await window.synorix.walletCreate(r.synorixCliPath);
     if (res && res.warmup) {
-      log('RPC henüz hazır; birkaç saniye sonra tekrar deneyin.', false);
+      log('RPC is warming up. Try again in a few seconds.');
       return;
     }
-    log('Cüzdan “default” hazır (veya zaten vardı).');
+    log('Wallet "default" is ready (or already existed).');
     refreshStatus();
   } catch (e) {
     log(humanError(e), true);
@@ -486,12 +365,12 @@ $('btnNewAddr').addEventListener('click', async () => {
     if (!(await guardRpcReadyForWallet(r.synorixCliPath))) return;
     const addr = await window.synorix.walletNewAddress(r.synorixCliPath);
     if (addr == null || addr === '') {
-      log('Adres alınamadı; RPC veya cüzdanı kontrol edin.', true);
+      log('Could not generate address. Check RPC or wallet.', true);
       return;
     }
     $('lastAddr').textContent = addr;
     $('mineAddr').value = addr;
-    log(`Yeni adres: ${addr}`);
+    log(`New address: ${addr}`);
     refreshStatus();
   } catch (e) {
     log(humanError(e), true);
@@ -503,7 +382,7 @@ $('btnMine').addEventListener('click', async () => {
   if (!r) return;
   const addr = $('mineAddr').value.trim();
   if (!addr) {
-    log('Önce “Yeni adres al” ile adres oluşturun veya adresi yapıştırın.', true);
+    log('Get a new address first or paste one.', true);
     return;
   }
   if (!(await guardRpcReadyForWallet(r.synorixCliPath))) return;
@@ -512,18 +391,10 @@ $('btnMine').addEventListener('click', async () => {
   $('btnMine').disabled = true;
   setMiningUi();
   try {
-    const out = await window.synorix.miningGenerate(r.synorixCliPath, n, addr);
-    if (out && out.warmup) {
-      log('RPC henüz hazır; biraz sonra tekrar deneyin.', true);
-      lastMiningText = 'Pasif';
-      return;
-    }
-    const c = out.count ?? 0;
-    lastMiningText = `Pasif (son: ${c} blok üretildi)`;
-    log(`Mining tamam: ${c} blok üretildi (generatetoaddress).`);
+    await runMiningOnce(r.synorixCliPath, n, addr, 'manual');
     refreshStatus();
   } catch (e) {
-    lastMiningText = 'Pasif (hata)';
+    lastMiningText = 'Idle (error)';
     log(humanError(e), true);
   } finally {
     miningBusy = false;
@@ -531,21 +402,86 @@ $('btnMine').addEventListener('click', async () => {
   }
 });
 
+$('btnAutoMine').addEventListener('click', async () => {
+  if (autoMiningEnabled) {
+    stopAutoMining('Auto mining stopped.');
+    setMiningUi();
+    return;
+  }
+
+  const r = await requireBinaries();
+  if (!r) return;
+  if (!(await guardRpcReadyForWallet(r.synorixCliPath))) return;
+  let addr = $('mineAddr').value.trim();
+  if (!addr) {
+    try {
+      addr = await window.synorix.walletNewAddress(r.synorixCliPath);
+      $('mineAddr').value = addr;
+      $('lastAddr').textContent = addr;
+      log(`Generated address for auto mining: ${addr}`);
+    } catch (e) {
+      log(humanError(e), true);
+      return;
+    }
+  }
+  autoMiningEnabled = true;
+  updateAutoMineButton();
+  const tick = async () => {
+    if (!autoMiningEnabled || miningBusy) return;
+    miningBusy = true;
+    setMiningUi();
+    try {
+      const n = parseInt($('mineN').value, 10) || 1;
+      await runMiningOnce(r.synorixCliPath, n, $('mineAddr').value.trim(), 'auto');
+      await refreshStatus();
+    } catch (e) {
+      log(humanError(e), true);
+    } finally {
+      miningBusy = false;
+      setMiningUi();
+    }
+  };
+  log('Auto mining started (every 150 seconds).');
+  await tick();
+  autoMiningTimer = setInterval(() => { tick().catch(() => {}); }, AUTO_MINING_INTERVAL_MS);
+  setMiningUi();
+});
+
+$('btnSend').addEventListener('click', async () => {
+  const r = await requireBinaries();
+  if (!r) return;
+  if (!(await guardRpcReadyForWallet(r.synorixCliPath))) return;
+  const to = $('sendTo').value.trim();
+  const amount = parseFloat($('sendAmount').value);
+  if (!to) {
+    log('Recipient address cannot be empty.', true);
+    return;
+  }
+  if (!Number.isFinite(amount) || amount <= 0) {
+    log('Amount must be greater than 0.', true);
+    return;
+  }
+  try {
+    const out = await window.synorix.walletSend(r.synorixCliPath, to, amount);
+    log(`Coins sent. TXID: ${out.txid || '\u2014'}`);
+    await refreshStatus();
+  } catch (e) {
+    log(humanError(e), true);
+  }
+});
+
 if (typeof window.synorix.onNodeHealth === 'function') {
   window.synorix.onNodeHealth((p) => {
     if (p.stopped) {
       clearNodeForceReadyTimer();
-      setNodeStartInProgress(false);
+      nodeStartInProgress = false;
       setNodeRunningUi(false);
       updateWalletMiningFromNodeState('off');
-      log('Node durduruldu.');
+      log('Node stopped.');
       return;
     }
     if (p.ok) {
-      if (p.started) {
-        void refreshStatus();
-        return;
-      }
+      if (p.started) { void refreshStatus(); return; }
       if (p.blocks != null) {
         $('stBlocks').textContent = String(p.blocks);
         void refreshStatus();
@@ -553,7 +489,7 @@ if (typeof window.synorix.onNodeHealth === 'function') {
     } else if (p.error) {
       const m = String(p.error).toLowerCase();
       if (m.includes('could not connect') || m.includes('connection refused') || m.includes('econnrefused')) {
-        setNodeStartInProgress(false);
+        nodeStartInProgress = false;
         setNodeRunningUi(false);
       }
       log(`Node RPC: ${p.error}`, true);
@@ -563,22 +499,20 @@ if (typeof window.synorix.onNodeHealth === 'function') {
 
 (async () => {
   const paths = await window.synorix.pathsGet();
-  $('datadirPreview').textContent = paths.useWsl
-    ? `${paths.datadir} (WSL · ${paths.wslDistro || 'Ubuntu'})`
-    : paths.datadir;
-  await refreshPickedDirLabel();
-  if (paths.useWsl) {
-    log(`Testnet veri klasörü (WSL): ${paths.datadir}`);
-    if (paths.datadirUnc) log(`Windows’tan erişim: ${paths.datadirUnc}`);
+  if (paths.remoteMode) {
+    log(`Remote VPS mode: ${paths.rpcUrl || 'configured'}`);
+    $('remoteBadge').textContent = 'Remote VPS';
   } else {
-    log(`Testnet veri klasörü: ${paths.datadir}`);
+    $('remoteBadge').hidden = true;
+    log(`Data directory: ${paths.datadir}`);
   }
   const r = await refreshBinaries();
   if (r.ok) {
-    log(r.useWsl ? 'WSL içinde synorixd / synorix-cli hazır.' : 'Synorix binary’leri otomatik bulundu.');
+    log(r.source === 'remote' ? 'Remote RPC mode active.' : 'Binaries found.');
     startPoll();
   } else {
-    log('Binary bulunamadı — “Binary’leri indir” veya uygulama yanına koyun.', true);
+    log('Could not initialize. Check configuration.', true);
   }
   setMiningUi();
+  updateAutoMineButton();
 })();

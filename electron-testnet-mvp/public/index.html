@@ -1,128 +1,115 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Synorix Testnet — MVP</title>
+  <title>Synorix Testnet</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="app">
+
     <header class="header">
       <div class="brand">
         <span class="logo">SNRX</span>
         <div>
           <h1>Synorix Testnet</h1>
-          <p class="tagline">Node · Cüzdan · Kolay mining (MVP)</p>
+          <p class="tagline">Node &middot; Wallet &middot; Mining</p>
         </div>
       </div>
       <div class="header-badges">
-        <span id="nodeBadge" class="badge badge-off">Node RPC: —</span>
+        <span id="remoteBadge" class="badge badge-info">Remote VPS</span>
+        <span id="nodeBadge" class="badge badge-off">Offline</span>
       </div>
     </header>
 
-    <section class="panel" id="binPanel">
-      <h2>Synorix programları</h2>
-      <p class="hint">
-        <strong>Windows:</strong> Varsayılan olarak düğüm <strong>WSL (Ubuntu)</strong> içindeki Linux
-        binary’lerle çalışır; veri klasörü Linux yolundadır (ör.
-        <code>/home/synorix/SynorixTestnetData</code>). Yollar
-        <code>%APPDATA%\…\synorix-testnet-mvp-config.json</code> içindeki
-        <code>wslSynorixdPath</code> / <code>wslSynorixCliPath</code> / <code>wslDatadir</code> ile
-        değiştirilir. Yerel <code>.exe</code> kullanmak için yapılandırmada <code>useWsl: false</code>
-        verin.
-      </p>
-      <p class="hint small">
-        macOS / Linux: <code>../build/bin</code> taranır. Windows + <code>useWsl: false</code>: klasörde
-        <code>.exe</code> aranır.
-      </p>
-      <div class="row pick-build-row">
-        <button type="button" class="primary small" id="btnPickBuildDir">build/bin klasörünü seç</button>
-        <span id="pickedBinDirLabel" class="hint small inline"></span>
-      </div>
-      <div id="binOk" class="bin-status bin-ok" hidden>
-        <span class="bin-label">Hazır</span>
-        <p class="bin-paths"><code id="pathDShow"></code><br /><code id="pathCliShow"></code></p>
-        <button type="button" class="ghost small" id="btnRescan">Yeniden ara</button>
-      </div>
-      <div id="binErr" class="bin-status bin-err" hidden>
-        <span class="bin-label">Programlar bulunamadı</span>
-        <p id="binErrHint" class="hint"></p>
-        <div class="err-actions">
-          <button type="button" class="primary small" id="btnRescan2">Tekrar dene</button>
-          <button type="button" class="primary small" id="btnPickBuildDirErr">build/bin klasörünü seç</button>
-          <button type="button" class="accent small" id="btnDownloadBin">Binary’leri indir (GitHub)</button>
+    <section class="dashboard">
+      <div class="stat-card" id="cardNode">
+        <div class="stat-icon"><span class="status-dot" id="dotNode"></span></div>
+        <div class="stat-body">
+          <span class="stat-label">Node Status</span>
+          <span class="stat-value" id="stNodeRun">Stopped</span>
         </div>
-        <p class="hint small">Releases’te hazır paket yoksa kaynak koddan derleyip iki dosyayı uygulama yanına koyun.</p>
       </div>
-      <p class="hint small">
-        Testnet veri klasörü: <code id="datadirPreview">—</code>
-        <button type="button" class="linkish" id="btnOpenData">Klasörü aç</button>
-      </p>
-      <details class="advanced">
-        <summary>Gelişmiş — dosyaları elle seç</summary>
-        <div class="row">
-          <label>synorixd</label>
-          <div class="path-row">
-            <input type="text" id="pathD" readonly placeholder="—" />
-            <button type="button" id="btnPickD">Seç…</button>
-          </div>
+      <div class="stat-card" id="cardBlocks">
+        <div class="stat-icon"><span class="stat-emoji">&#9646;</span></div>
+        <div class="stat-body">
+          <span class="stat-label">Block Height</span>
+          <span class="stat-value" id="stBlocks">&mdash;</span>
         </div>
-        <div class="row">
-          <label>synorix-cli</label>
-          <div class="path-row">
-            <input type="text" id="pathCli" readonly placeholder="—" />
-            <button type="button" id="btnPickCli">Seç…</button>
-          </div>
+      </div>
+      <div class="stat-card" id="cardBalance">
+        <div class="stat-icon"><span class="stat-emoji">&#9733;</span></div>
+        <div class="stat-body">
+          <span class="stat-label">Balance</span>
+          <span class="stat-value" id="stBal">&mdash;</span>
         </div>
-        <button type="button" class="ghost small" id="btnSaveManual">Manuel yolları kaydet</button>
-      </details>
+      </div>
+      <div class="stat-card" id="cardMining">
+        <div class="stat-icon"><span class="status-dot" id="dotMine"></span></div>
+        <div class="stat-body">
+          <span class="stat-label">Mining</span>
+          <span class="stat-value" id="stMining">Idle</span>
+        </div>
+      </div>
     </section>
 
     <section class="panel actions" id="panelActions">
-      <h2>İşlemler</h2>
-      <div class="btn-grid">
-        <button type="button" class="primary" id="btnStartNode">Testnet node’u başlat</button>
-        <button type="button" class="ghost" id="btnStopNode">Node’u durdur</button>
-        <button type="button" id="btnCreateWallet">Cüzdan oluştur (“default”)</button>
-        <button type="button" id="btnNewAddr">Yeni adres al</button>
-        <button type="button" class="accent" id="btnMine">Mining başlat</button>
+      <div class="action-group">
+        <h2>Node</h2>
+        <div class="btn-row">
+          <button type="button" class="primary" id="btnStartNode">Connect to Node</button>
+          <button type="button" class="ghost" id="btnStopNode">Disconnect</button>
+        </div>
+        <p class="hint" id="stIbd">&mdash;</p>
       </div>
-      <div class="mine-row">
-        <label for="mineN">Blok sayısı</label>
-        <input type="number" id="mineN" min="1" max="100" value="1" />
-        <label for="mineAddr">Adres</label>
-        <input type="text" id="mineAddr" placeholder="Önce yeni adres alın veya yapıştırın" />
+
+      <div class="action-group">
+        <h2>Wallet</h2>
+        <div class="btn-row">
+          <button type="button" id="btnCreateWallet">Create Wallet</button>
+          <button type="button" id="btnNewAddr">New Address</button>
+        </div>
+        <div class="addr-box">
+          <span class="addr-label">Latest Address</span>
+          <code id="lastAddr">&mdash;</code>
+        </div>
+      </div>
+
+      <div class="action-group">
+        <h2>Mining</h2>
+        <div class="input-row">
+          <label for="mineN">Blocks</label>
+          <input type="number" id="mineN" min="1" max="100" value="1" />
+          <label for="mineAddr">Address</label>
+          <input type="text" id="mineAddr" placeholder="Click 'New Address' or paste one" />
+        </div>
+        <div class="btn-row">
+          <button type="button" class="accent" id="btnMine">Mine Once</button>
+          <button type="button" class="primary" id="btnAutoMine">Start Auto Mining</button>
+        </div>
+      </div>
+
+      <div class="action-group">
+        <h2>Send Coins</h2>
+        <div class="input-row">
+          <label for="sendTo">Recipient</label>
+          <input type="text" id="sendTo" placeholder="tsnrx1... address" />
+          <label for="sendAmount">Amount (SNRX)</label>
+          <input type="number" id="sendAmount" min="0.00000001" step="0.00000001" value="1" />
+        </div>
+        <div class="btn-row">
+          <button type="button" class="accent" id="btnSend">Send</button>
+        </div>
       </div>
     </section>
 
-    <section class="panel status">
-      <h2>Durum paneli</h2>
-      <div class="status-lines">
-        <div class="status-line">
-          <span class="status-dot" id="dotNode"></span>
-          <span class="status-label">Node</span>
-          <span class="status-value" id="stNodeRun">Durdu</span>
-        </div>
-        <div class="status-line">
-          <span class="status-dot" id="dotMine"></span>
-          <span class="status-label">Mining</span>
-          <span class="status-value" id="stMining">Pasif</span>
-        </div>
-      </div>
-      <div class="stats" id="stats">
-        <div class="stat"><span class="k">Ağ bağlantısı</span><span class="v" id="stConn">—</span></div>
-        <div class="stat"><span class="k">Blok yüksekliği</span><span class="v" id="stBlocks">—</span></div>
-        <div class="stat"><span class="k">Doğrulama · IBD</span><span class="v" id="stIbd">—</span></div>
-        <div class="stat"><span class="k">Bakiye (default)</span><span class="v" id="stBal">—</span></div>
-      </div>
-      <div class="addr-box">
-        <span class="k">Son adres</span>
-        <code id="lastAddr">—</code>
-      </div>
+    <section class="panel log-panel">
+      <h2>Activity Log</h2>
       <pre class="log" id="log"></pre>
     </section>
+
   </div>
   <script src="renderer.js"></script>
 </body>
