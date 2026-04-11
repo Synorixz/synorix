@@ -310,6 +310,10 @@ $('btnStartNode').addEventListener('click', async () => {
     const start = await window.synorix.nodeStart(r.synorixdPath, r.synorixCliPath);
     if (start.rpcReady) {
       log(start.remote ? 'Connected to remote VPS node. RPC is ready.' : 'Node ready. RPC is responding.');
+      if (start.walletId) {
+        $('walletIdDisplay').textContent = start.walletId;
+        log(`Wallet loaded: ${start.walletId}`);
+      }
       setNodeRunningUi(true, { fullyReady: true });
       updateWalletMiningFromNodeState('ready');
     } else {
@@ -351,7 +355,10 @@ $('btnCreateWallet').addEventListener('click', async () => {
       log('RPC is warming up. Try again in a few seconds.');
       return;
     }
-    log('Wallet "default" is ready (or already existed).');
+    if (res.walletId) {
+      $('walletIdDisplay').textContent = res.walletId;
+    }
+    log(`Wallet "${res.walletId || 'default'}" is ready.`);
     refreshStatus();
   } catch (e) {
     log(humanError(e), true);
@@ -513,6 +520,12 @@ if (typeof window.synorix.onNodeHealth === 'function') {
   } else {
     log('Could not initialize. Check configuration.', true);
   }
+  try {
+    const winfo = await window.synorix.walletInfo();
+    if (winfo.walletId) {
+      $('walletIdDisplay').textContent = winfo.walletId;
+    }
+  } catch { /* wallet not yet created */ }
   setMiningUi();
   updateAutoMineButton();
 })();

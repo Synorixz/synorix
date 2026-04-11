@@ -139,6 +139,7 @@ function mergeConfigDefaults(raw) {
     rpcUser: (c.rpcUser && String(c.rpcUser).trim()) || FIXED_RPC_USER,
     rpcPassword: (c.rpcPassword && String(c.rpcPassword).trim()) || FIXED_RPC_PASSWORD,
     rpcTimeoutMs: Number.isFinite(Number(c.rpcTimeoutMs)) ? Number(c.rpcTimeoutMs) : 15000,
+    walletId: (c.walletId && String(c.walletId).trim()) || '',
     synorixdPath: c.synorixdPath || '',
     synorixCliPath: c.synorixCliPath || '',
     synorixBinDir: c.synorixBinDir || '',
@@ -159,8 +160,20 @@ function loadConfig() {
 }
 
 function saveConfig(cfg) {
+  let base = {};
+  try { base = JSON.parse(fs.readFileSync(configPath(), 'utf8')); } catch { /* first save */ }
+  const next = { ...base, ...cfg };
   fs.mkdirSync(path.dirname(configPath()), { recursive: true });
-  fs.writeFileSync(configPath(), JSON.stringify(mergeConfigDefaults(cfg), null, 2), 'utf8');
+  fs.writeFileSync(configPath(), JSON.stringify(mergeConfigDefaults(next), null, 2), 'utf8');
+}
+
+function getWalletId() {
+  return loadConfig().walletId || 'default';
+}
+
+function generateWalletId() {
+  const hex = require('crypto').randomBytes(4).toString('hex');
+  return `snrx_${hex}`;
 }
 
 function getDatadir() {
@@ -1424,10 +1437,11 @@ ipcMain.handle('node:start', async (_e, { synorixdPath, synorixCliPath }) => {
         throw new Error(wrRemote.message || MSG_RPC_TIMED_OUT);
       }
       startNodeHealthMonitor(cliHint);
+      await ensureUserWallet(cliHint);
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('node:health', { ok: true, started: true, attached: true, remote: true });
       }
-      return { ok: true, mode: 'remote-vps', rpcReady: true, remote: true };
+      return { ok: true, mode: 'remote-vps', rpcReady: true, remote: true, walletId: getWalletId() };
     }
 
     if (useWslNodeMode()) {
@@ -1716,42 +1730,41 @@ ipcMain.handle('rpc:getconnectioncount', async (_e, { synorixCliPath }) => {
   }
 });
 
-async function ensureDefaultWalletLoaded(synorixCliPath) {
+async function ensureUserWallet(synorixCliPath) {
+  let wid = getWalletId();
+  if (!wid || wid === 'default') {
+    wid = generateWalletId();
+    saveConfig({ walletId: wid });
+  }
   try {
     const loadedRaw = await runCli(synorixCliPath, ['listwallets']);
     let loaded = [];
-    try {
-      loaded = JSON.parse(String(loadedRaw || '[]'));
-    } catch {
-      loaded = [];
-    }
-    if (Array.isArray(loaded) && loaded.includes('default')) return;
-  } catch {
-    // listwallets başarısızsa bir sonraki adımlarla toparlamayı deneriz
-  }
+    try { loaded = JSON.parse(String(loadedRaw || '[]')); } catch { loaded = []; }
+    if (Array.isArray(loaded) && loaded.includes(wid)) return wid;
+  } catch { /* proceed to load/create */ }
   try {
-    await runCli(synorixCliPath, ['loadwallet', 'default']);
-    return;
+    await runCli(synorixCliPath, ['loadwallet', wid]);
+    return wid;
   } catch (e) {
     const m = String(e && e.message ? e.message : '').toLowerCase();
+    if (m.includes('already loaded')) return wid;
     if (!m.includes('not found') && !m.includes('does not exist')) {
-      if (m.includes('already loaded')) return;
+      /* unexpected error on load -- fall through to create */
     }
   }
   try {
-    await runCli(synorixCliPath, ['createwallet', 'default']);
+    await runCli(synorixCliPath, ['createwallet', wid]);
   } catch (e) {
     const m = String(e && e.message ? e.message : '').toLowerCase();
-    if (!m.includes('already exists') && !m.includes('duplicate')) {
-      throw e;
-    }
+    if (!m.includes('already exists') && !m.includes('duplicate')) throw e;
   }
   try {
-    await runCli(synorixCliPath, ['loadwallet', 'default']);
+    await runCli(synorixCliPath, ['loadwallet', wid]);
   } catch (e) {
     const m = String(e && e.message ? e.message : '').toLowerCase();
     if (!m.includes('already loaded')) throw e;
   }
+  return wid;
 }
 
 ipcMain.handle('wallet:create', async (_e, { synorixCliPath }) => {
@@ -1760,8 +1773,8 @@ ipcMain.handle('wallet:create', async (_e, { synorixCliPath }) => {
     if (!wr.ok) {
       throw new Error(wr.message || MSG_RPC_TIMED_OUT);
     }
-    await runCli(synorixCliPath, ['createwallet', 'default']);
-    return { ok: true };
+    const wid = await ensureUserWallet(synorixCliPath);
+    return { ok: true, walletId: wid };
   } catch (e) {
     if (isRpcConnectionLikeError(String(e && e.message))) {
       throw new Error(MSG_RPC_OFFLINE);
@@ -1771,10 +1784,14 @@ ipcMain.handle('wallet:create', async (_e, { synorixCliPath }) => {
     }
     const m = String(e.message || '');
     if (/already exists|duplicate/i.test(m)) {
-      return { ok: true };
+      return { ok: true, walletId: getWalletId() };
     }
     throw new Error(toUserMessage(e));
   }
+});
+
+ipcMain.handle('wallet:info', () => {
+  return { walletId: getWalletId() };
 });
 
 ipcMain.handle('wallet:newaddress', async (_e, { synorixCliPath }) => {
@@ -1783,8 +1800,9 @@ ipcMain.handle('wallet:newaddress', async (_e, { synorixCliPath }) => {
     if (!wr.ok) {
       throw new Error(wr.message || MSG_RPC_TIMED_OUT);
     }
-    await ensureDefaultWalletLoaded(synorixCliPath);
-    return await runCli(synorixCliPath, ['-rpcwallet=default', 'getnewaddress']);
+    await ensureUserWallet(synorixCliPath);
+    const wid = getWalletId();
+    return await runCli(synorixCliPath, [`-rpcwallet=${wid}`, 'getnewaddress']);
   } catch (e) {
     if (isRpcConnectionLikeError(String(e && e.message))) {
       throw new Error(MSG_RPC_OFFLINE);
@@ -1798,12 +1816,38 @@ ipcMain.handle('wallet:newaddress', async (_e, { synorixCliPath }) => {
 
 ipcMain.handle('wallet:balance', async (_e, { synorixCliPath }) => {
   try {
-    await ensureDefaultWalletLoaded(synorixCliPath);
-    const bal = await runCli(synorixCliPath, ['-rpcwallet=default', 'getbalance']);
+    await ensureUserWallet(synorixCliPath);
+    const wid = getWalletId();
+    const bal = await runCli(synorixCliPath, [`-rpcwallet=${wid}`, 'getbalance']);
     return parseFloat(bal);
   } catch (e) {
     if (isRpcConnectionLikeError(String(e && e.message))) return null;
     if (isRpcWarmupError(e) || isRpcWarmupDetail(String(e && e.message))) return null;
+    throw new Error(toUserMessage(e));
+  }
+});
+
+ipcMain.handle('wallet:send', async (_e, { synorixCliPath, address, amount }) => {
+  try {
+    const wr = await waitForRPCReady(synorixCliPath);
+    if (!wr.ok) {
+      throw new Error(wr.message || MSG_RPC_TIMED_OUT);
+    }
+    const to = String(address || '').trim();
+    const amt = Number(amount);
+    if (!to) throw new Error('Recipient address cannot be empty.');
+    if (!Number.isFinite(amt) || amt <= 0) throw new Error('Amount must be greater than 0.');
+    await ensureUserWallet(synorixCliPath);
+    const wid = getWalletId();
+    const txid = await runCli(synorixCliPath, [`-rpcwallet=${wid}`, 'sendtoaddress', to, String(amt)]);
+    return { ok: true, txid: String(txid || '').trim() };
+  } catch (e) {
+    if (isRpcConnectionLikeError(String(e && e.message))) {
+      throw new Error(MSG_RPC_OFFLINE);
+    }
+    if (isRpcWarmupError(e) || isRpcWarmupDetail(String(e && e.message))) {
+      throw new Error(MSG_WARMUP_RPC);
+    }
     throw new Error(toUserMessage(e));
   }
 });
