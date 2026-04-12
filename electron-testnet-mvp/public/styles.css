@@ -164,6 +164,13 @@ h1 {
   text-overflow: ellipsis;
 }
 
+.stat-sub {
+  font-size: 0.62rem;
+  color: var(--warn);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 /* ---- Status Dots ---- */
 .status-dot {
   width: 12px;

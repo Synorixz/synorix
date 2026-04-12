@@ -67,7 +67,7 @@ function humanError(err) {
     return 'RPC authentication failed. Check rpcUser/rpcPassword in config.';
   }
   if (m.includes('insufficient funds') || m.includes('not enough')) {
-    return 'Insufficient funds. Mine some blocks first to get testnet coins.';
+    return 'Insufficient spendable funds. Mining rewards need 100 block confirmations before they can be sent. Keep mining to unlock more coins.';
   }
   return raw || 'An unexpected error occurred.';
 }
@@ -256,10 +256,25 @@ async function refreshStatus() {
     }
 
     try {
-      const bal = await window.synorix.walletBalance(cfg.synorixCliPath);
-      $('stBal').textContent = formatWalletBalance(bal);
+      const bals = await window.synorix.walletBalances(cfg.synorixCliPath);
+      if (bals && bals.mine) {
+        const spendable = Number(bals.mine.trusted || 0);
+        const immature = Number(bals.mine.immature || 0);
+        $('stBal').textContent = `${spendable.toFixed(4)} SNRX`;
+        const immEl = $('stImmature');
+        if (immEl) {
+          immEl.textContent = immature > 0 ? `+${immature.toFixed(4)} immature` : '';
+        }
+      } else {
+        const bal = await window.synorix.walletBalance(cfg.synorixCliPath);
+        $('stBal').textContent = formatWalletBalance(bal);
+        const immEl = $('stImmature');
+        if (immEl) immEl.textContent = '';
+      }
     } catch {
       $('stBal').textContent = 'No wallet';
+      const immEl = $('stImmature');
+      if (immEl) immEl.textContent = '';
     }
   } catch {
     nodeStartInProgress = false;

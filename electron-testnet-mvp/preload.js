@@ -35,6 +35,7 @@ contextBridge.exposeInMainWorld('synorix', {
   walletNewAddress: (synorixCliPath) =>
     ipcRenderer.invoke('wallet:newaddress', { synorixCliPath }),
   walletBalance: (synorixCliPath) => ipcRenderer.invoke('wallet:balance', { synorixCliPath }),
+  walletBalances: (synorixCliPath) => ipcRenderer.invoke('wallet:balances', { synorixCliPath }),
   walletSend: (synorixCliPath, address, amount) =>
     ipcRenderer.invoke('wallet:send', { synorixCliPath, address, amount }),
   walletInfo: () => ipcRenderer.invoke('wallet:info'),
