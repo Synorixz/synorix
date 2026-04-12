@@ -356,6 +356,24 @@ button.danger {
   box-shadow: none;
 }
 
+/* ---- Wallet ID Box ---- */
+.wallet-id-box {
+  padding: 0.6rem 0.8rem;
+  margin-bottom: 0.65rem;
+  background: rgba(61, 156, 245, 0.08);
+  border-radius: 10px;
+  border: 1px solid rgba(61, 156, 245, 0.2);
+}
+
+.wallet-id-box code {
+  word-break: break-all;
+  font-size: 0.88rem;
+  font-weight: 700;
+  background: transparent;
+  padding: 0;
+  color: var(--accent);
+}
+
 /* ---- Address Box ---- */
 .addr-box {
   padding: 0.6rem 0.8rem;
