@@ -75,26 +75,36 @@
 
       <div class="action-group">
         <h2>Wallet</h2>
-        <div class="wallet-selector">
-          <label for="walletSelect">Active Wallet</label>
-          <select id="walletSelect"><option value="">Loading...</option></select>
-        </div>
-        <div class="addr-box addr-main">
-          <span class="addr-label">Your Address</span>
-          <div class="copy-row">
-            <code id="lastAddr" class="addr-highlight">&mdash;</code>
-            <button type="button" class="copy-btn" id="btnCopyAddr" title="Copy address">&#128203;</button>
+
+        <div class="wallet-active-card">
+          <div class="wallet-active-top">
+            <div class="wallet-active-info">
+              <span class="wallet-active-name" id="activeWalletName">No Wallet</span>
+              <select id="walletSelect" class="wallet-switch-select"><option value="">Loading...</option></select>
+            </div>
+          </div>
+          <div class="wallet-addr-display">
+            <span class="wallet-addr-label">Receive Address</span>
+            <div class="copy-row">
+              <code id="lastAddr" class="wallet-addr-value">&mdash;</code>
+              <button type="button" class="copy-btn" id="btnCopyAddr" title="Copy address">&#128203;</button>
+            </div>
           </div>
         </div>
+
         <div class="btn-row">
-          <button type="button" id="btnNewAddr">New Address</button>
+          <button type="button" class="accent" id="btnNewAddr">Generate New Address</button>
           <button type="button" id="btnCreateWallet" hidden>Create Wallet</button>
         </div>
-        <div class="input-row wallet-create-row">
-          <label for="newWalletName">Create new wallet</label>
-          <input type="text" id="newWalletName" placeholder="e.g. MyWallet" maxlength="30" />
-          <button type="button" class="primary" id="btnCreateNamed">Create</button>
+
+        <div class="wallet-create-section">
+          <span class="wallet-create-title">Create New Wallet</span>
+          <div class="wallet-create-form">
+            <input type="text" id="newWalletName" placeholder="Wallet Name" maxlength="30" />
+            <button type="button" class="primary" id="btnCreateNamed">Create</button>
+          </div>
         </div>
+
         <code id="walletIdDisplay" hidden></code>
       </div>
 
@@ -104,7 +114,7 @@
           <label for="mineN">Blocks</label>
           <input type="number" id="mineN" min="1" max="100" value="1" />
           <label for="mineAddr">Address</label>
-          <input type="text" id="mineAddr" placeholder="Click 'New Address' or paste one" />
+          <input type="text" id="mineAddr" placeholder="Auto-filled from wallet" />
         </div>
         <div class="btn-row">
           <button type="button" class="accent" id="btnMine">Mine Once</button>

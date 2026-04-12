@@ -566,23 +566,25 @@ async function refreshWalletList() {
     const list = winfo.wallets || [];
     const active = winfo.walletId || '';
     const sel = $('walletSelect');
-    if (!sel) return;
-    sel.innerHTML = '';
-    if (list.length === 0) {
-      const opt = document.createElement('option');
-      opt.value = '';
-      opt.textContent = 'No wallets yet';
-      sel.appendChild(opt);
-    } else {
-      for (const w of list) {
+    if (sel) {
+      sel.innerHTML = '';
+      if (list.length === 0) {
         const opt = document.createElement('option');
-        opt.value = w.id;
-        const addrShort = w.address ? `${w.address.slice(0, 14)}...` : 'no address';
-        opt.textContent = `${w.name || w.id} \u2192 ${addrShort}`;
-        if (w.id === active) opt.selected = true;
+        opt.value = '';
+        opt.textContent = 'No wallets';
         sel.appendChild(opt);
+      } else {
+        for (const w of list) {
+          const opt = document.createElement('option');
+          opt.value = w.id;
+          opt.textContent = w.name || w.id;
+          if (w.id === active) opt.selected = true;
+          sel.appendChild(opt);
+        }
       }
     }
+    const nameEl = $('activeWalletName');
+    if (nameEl) nameEl.textContent = winfo.walletName || active || 'No Wallet';
     const wid = $('walletIdDisplay');
     if (wid) wid.textContent = active || '';
     if (winfo.address) {
