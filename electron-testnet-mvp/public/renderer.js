@@ -135,11 +135,15 @@ function stopAutoMining(reason = '') {
 function updateAutoMineButton() {
   const btn = $('btnAutoMine');
   if (!btn) return;
+  const txtEl = btn.querySelector('.btn-text');
+  const spEl = btn.querySelector('.spinner');
   if (autoMiningEnabled) {
-    btn.textContent = 'Stop Auto Mining';
+    if (txtEl) txtEl.textContent = 'Stop Auto Mining';
+    if (spEl) spEl.hidden = false;
     btn.className = 'danger';
   } else {
-    btn.textContent = 'Start Auto Mining';
+    if (txtEl) txtEl.textContent = 'Start Auto Mining';
+    if (spEl) spEl.hidden = true;
     btn.className = 'primary';
   }
 }
@@ -349,9 +353,6 @@ $('btnStartNode').addEventListener('click', async () => {
   applyNodeRunningWarmupUi();
   $('stIbd').textContent = 'Connecting to RPC...';
   updateWalletMiningFromNodeState('starting');
-  const cBtn = $('btnStartNode');
-  showSpinner(cBtn, true);
-  cBtn.disabled = true;
   log('Connecting to VPS node...');
 
   nodeForceReadyTimer = setTimeout(() => {
@@ -384,25 +385,26 @@ $('btnStartNode').addEventListener('click', async () => {
     void refreshStatus();
   } finally {
     nodeStartInProgress = false;
-    showSpinner(cBtn, false);
-    cBtn.disabled = false;
     void refreshStatus();
   }
 });
 
 $('btnStopNode').addEventListener('click', async () => {
-  const r = await requireBinaries();
-  if (!r) return;
+  clearNodeForceReadyTimer();
+  stopAutoMining('Auto mining stopped (disconnected).');
+  nodeStartInProgress = false;
   try {
-    clearNodeForceReadyTimer();
-    stopAutoMining('Auto mining stopped (node disconnected).');
-    await window.synorix.nodeStop(r.synorixCliPath);
-    nodeStartInProgress = false;
-    log('Disconnected from node.');
-    refreshStatus();
-  } catch (e) {
-    log(humanError(e), true);
-  }
+    await window.synorix.nodeStop(cfg.synorixCliPath);
+  } catch { /* ignore stop errors */ }
+  setNodeRunningUi(false);
+  updateWalletMiningFromNodeState('off');
+  $('stBlocks').textContent = '\u2014';
+  $('stBal').textContent = '\u2014';
+  $('stIbd').textContent = '\u2014';
+  if ($('stPeers')) $('stPeers').textContent = '\u2014';
+  log('Disconnected from node.');
+  showToast('Disconnected.', 'info');
+  setMiningUi();
 });
 
 $('btnCreateWallet').addEventListener('click', async () => {
@@ -457,9 +459,7 @@ $('btnMine').addEventListener('click', async () => {
   if (!(await guardRpcReadyForWallet(r.synorixCliPath))) return;
   const n = parseInt($('mineN').value, 10) || 1;
   miningBusy = true;
-  const mBtn = $('btnMine');
-  showSpinner(mBtn, true);
-  mBtn.disabled = true;
+  $('btnMine').disabled = true;
   setMiningUi();
   try {
     await runMiningOnce(r.synorixCliPath, n, addr, 'manual');
@@ -471,8 +471,6 @@ $('btnMine').addEventListener('click', async () => {
     showToast(humanError(e), 'error');
   } finally {
     miningBusy = false;
-    showSpinner(mBtn, false);
-    mBtn.disabled = false;
     void refreshStatus().then(() => setMiningUi());
   }
 });
@@ -536,9 +534,6 @@ $('btnSend').addEventListener('click', async () => {
     log('Amount must be greater than 0.', true);
     return;
   }
-  const sBtn = $('btnSend');
-  showSpinner(sBtn, true);
-  sBtn.disabled = true;
   try {
     const out = await window.synorix.walletSend(r.synorixCliPath, to, amount);
     log(`Coins sent. TXID: ${out.txid || '\u2014'}`);
@@ -547,9 +542,6 @@ $('btnSend').addEventListener('click', async () => {
   } catch (e) {
     log(humanError(e), true);
     showToast(humanError(e), 'error');
-  } finally {
-    showSpinner(sBtn, false);
-    sBtn.disabled = false;
   }
 });
 
