@@ -1795,6 +1795,14 @@ async function ensureUserWallet(synorixCliPath) {
     const m = String(e && e.message ? e.message : '').toLowerCase();
     if (!m.includes('already loaded')) throw e;
   }
+  const entry = getWalletList().find((w) => w.id === wid);
+  if (!entry || !entry.address) {
+    try {
+      const addrRaw = await runCli(synorixCliPath, [`-rpcwallet=${wid}`, 'getnewaddress']);
+      const addr = String(addrRaw || '').trim();
+      if (addr) addWalletToList(wid, null, addr);
+    } catch { /* address generation is best-effort here */ }
+  }
   return wid;
 }
 
@@ -1896,6 +1904,11 @@ ipcMain.handle('wallet:newaddress', async (_e, { synorixCliPath }) => {
     }
     await ensureUserWallet(synorixCliPath);
     const wid = getWalletId();
+    const list = getWalletList();
+    const entry = list.find((w) => w.id === wid);
+    if (entry && entry.address) {
+      return entry.address;
+    }
     const addr = await runCli(synorixCliPath, [`-rpcwallet=${wid}`, 'getnewaddress']);
     const addrStr = String(addr || '').trim();
     if (addrStr) addWalletToList(wid, null, addrStr);

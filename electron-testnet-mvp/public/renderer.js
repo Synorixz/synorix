@@ -451,12 +451,13 @@ $('btnNewAddr').addEventListener('click', async () => {
     if (!(await guardRpcReadyForWallet(r.synorixCliPath))) return;
     const addr = await window.synorix.walletNewAddress(r.synorixCliPath);
     if (addr == null || addr === '') {
-      log('Could not generate address. Check RPC or wallet.', true);
+      log('Could not retrieve address. Check RPC or wallet.', true);
       return;
     }
     $('lastAddr').textContent = addr;
     $('mineAddr').value = addr;
-    log(`New address: ${addr}`);
+    log(`Wallet address: ${addr}`);
+    showToast('Address ready.', 'success');
     refreshStatus();
   } catch (e) {
     log(humanError(e), true);
