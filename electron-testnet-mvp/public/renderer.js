@@ -14,10 +14,29 @@ let nodeStartInProgress = false;
 let nodeForceReadyTimer = null;
 
 function clearNodeForceReadyTimer() {
-  if (nodeForceReadyTimer != null) {
-    clearTimeout(nodeForceReadyTimer);
-    nodeForceReadyTimer = null;
-  }
+  if (nodeForceReadyTimer != null) { clearTimeout(nodeForceReadyTimer); nodeForceReadyTimer = null; }
+}
+
+function showToast(message, type = 'info') {
+  const c = $('toastContainer');
+  if (!c) return;
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = message;
+  c.appendChild(el);
+  setTimeout(() => { el.classList.add('fade-out'); setTimeout(() => el.remove(), 350); }, 4000);
+}
+
+async function copyToClipboard(text) {
+  try { await navigator.clipboard.writeText(text); showToast('Copied to clipboard', 'success'); }
+  catch { showToast('Failed to copy', 'error'); }
+}
+
+function showSpinner(btn, show) {
+  const sp = btn.querySelector('.spinner');
+  const tx = btn.querySelector('.btn-text');
+  if (sp) sp.hidden = !show;
+  if (tx) tx.hidden = show;
 }
 
 function humanError(err) {
@@ -218,6 +237,10 @@ async function refreshStatus() {
       const ibd = info.initialblockdownload === true ? 'yes' : info.initialblockdownload === false ? 'no' : '\u2014';
       $('stIbd').textContent = `Progress: ${vpStr} | IBD: ${ibd}`;
       $('stBlocks').textContent = info.blocks != null ? String(info.blocks) : '\u2014';
+      try {
+        const pc = await window.synorix.getConnectionCount(cfg.synorixCliPath);
+        if ($('stPeers')) $('stPeers').textContent = pc != null && Number.isFinite(pc) ? String(pc) : '\u2014';
+      } catch { if ($('stPeers')) $('stPeers').textContent = '\u2014'; }
     }
 
     if (nodeStartInProgress) {
@@ -326,6 +349,9 @@ $('btnStartNode').addEventListener('click', async () => {
   applyNodeRunningWarmupUi();
   $('stIbd').textContent = 'Connecting to RPC...';
   updateWalletMiningFromNodeState('starting');
+  const cBtn = $('btnStartNode');
+  showSpinner(cBtn, true);
+  cBtn.disabled = true;
   log('Connecting to VPS node...');
 
   nodeForceReadyTimer = setTimeout(() => {
@@ -354,9 +380,12 @@ $('btnStartNode').addEventListener('click', async () => {
   } catch (e) {
     clearNodeForceReadyTimer();
     log(humanError(e), true);
+    showToast(humanError(e), 'error');
     void refreshStatus();
   } finally {
     nodeStartInProgress = false;
+    showSpinner(cBtn, false);
+    cBtn.disabled = false;
     void refreshStatus();
   }
 });
@@ -389,7 +418,9 @@ $('btnCreateWallet').addEventListener('click', async () => {
     if (res.walletId) {
       $('walletIdDisplay').textContent = res.walletId;
     }
-    log(`Wallet "${res.walletId || 'default'}" is ready.`);
+    const wmsg = `Wallet "${res.walletId || 'default'}" is ready.`;
+    log(wmsg);
+    showToast(wmsg, 'success');
     refreshStatus();
   } catch (e) {
     log(humanError(e), true);
@@ -426,16 +457,22 @@ $('btnMine').addEventListener('click', async () => {
   if (!(await guardRpcReadyForWallet(r.synorixCliPath))) return;
   const n = parseInt($('mineN').value, 10) || 1;
   miningBusy = true;
-  $('btnMine').disabled = true;
+  const mBtn = $('btnMine');
+  showSpinner(mBtn, true);
+  mBtn.disabled = true;
   setMiningUi();
   try {
     await runMiningOnce(r.synorixCliPath, n, addr, 'manual');
+    showToast(`Mined ${n} block(s).`, 'success');
     refreshStatus();
   } catch (e) {
     lastMiningText = 'Idle (error)';
     log(humanError(e), true);
+    showToast(humanError(e), 'error');
   } finally {
     miningBusy = false;
+    showSpinner(mBtn, false);
+    mBtn.disabled = false;
     void refreshStatus().then(() => setMiningUi());
   }
 });
@@ -499,14 +536,36 @@ $('btnSend').addEventListener('click', async () => {
     log('Amount must be greater than 0.', true);
     return;
   }
+  const sBtn = $('btnSend');
+  showSpinner(sBtn, true);
+  sBtn.disabled = true;
   try {
     const out = await window.synorix.walletSend(r.synorixCliPath, to, amount);
     log(`Coins sent. TXID: ${out.txid || '\u2014'}`);
+    showToast('Coins sent!', 'success');
     await refreshStatus();
   } catch (e) {
     log(humanError(e), true);
+    showToast(humanError(e), 'error');
+  } finally {
+    showSpinner(sBtn, false);
+    sBtn.disabled = false;
   }
 });
+
+if ($('btnCopyWalletId')) {
+  $('btnCopyWalletId').addEventListener('click', () => {
+    const t = $('walletIdDisplay').textContent;
+    if (t && t !== '\u2014') copyToClipboard(t);
+  });
+}
+
+if ($('btnCopyAddr')) {
+  $('btnCopyAddr').addEventListener('click', () => {
+    const t = $('lastAddr').textContent;
+    if (t && t !== '\u2014') copyToClipboard(t);
+  });
+}
 
 if (typeof window.synorix.onNodeHealth === 'function') {
   window.synorix.onNodeHealth((p) => {
@@ -556,7 +615,9 @@ if (typeof window.synorix.onNodeHealth === 'function') {
       try {
         const start = await window.synorix.nodeStart(r.synorixdPath, r.synorixCliPath);
         if (start.rpcReady) {
-          log(start.remote ? 'Connected to remote VPS node.' : 'Node ready.');
+          const cmsg = start.remote ? 'Connected to remote VPS node.' : 'Node ready.';
+          log(cmsg);
+          showToast(cmsg, 'success');
           if (start.walletId) {
             $('walletIdDisplay').textContent = start.walletId;
             log(`Wallet loaded: ${start.walletId}`);
