@@ -79,29 +79,23 @@
           <label for="walletSelect">Active Wallet</label>
           <select id="walletSelect"><option value="">Loading...</option></select>
         </div>
+        <div class="addr-box addr-main">
+          <span class="addr-label">Your Address</span>
+          <div class="copy-row">
+            <code id="lastAddr" class="addr-highlight">&mdash;</code>
+            <button type="button" class="copy-btn" id="btnCopyAddr" title="Copy address">&#128203;</button>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button type="button" id="btnNewAddr">New Address</button>
+          <button type="button" id="btnCreateWallet" hidden>Create Wallet</button>
+        </div>
         <div class="input-row wallet-create-row">
-          <label for="newWalletName">New wallet name</label>
+          <label for="newWalletName">Create new wallet</label>
           <input type="text" id="newWalletName" placeholder="e.g. MyWallet" maxlength="30" />
           <button type="button" class="primary" id="btnCreateNamed">Create</button>
         </div>
-        <div class="btn-row">
-          <button type="button" id="btnCreateWallet" hidden>Create Wallet</button>
-          <button type="button" id="btnNewAddr">New Address</button>
-        </div>
-        <div class="wallet-id-box">
-          <span class="addr-label">Wallet ID (internal)</span>
-          <div class="copy-row">
-            <code id="walletIdDisplay">&mdash;</code>
-            <button type="button" class="copy-btn" id="btnCopyWalletId" title="Copy">&#128203;</button>
-          </div>
-        </div>
-        <div class="addr-box">
-          <span class="addr-label">Latest Address (tsnrx...)</span>
-          <div class="copy-row">
-            <code id="lastAddr">&mdash;</code>
-            <button type="button" class="copy-btn" id="btnCopyAddr" title="Copy">&#128203;</button>
-          </div>
-        </div>
+        <code id="walletIdDisplay" hidden></code>
       </div>
 
       <div class="action-group">

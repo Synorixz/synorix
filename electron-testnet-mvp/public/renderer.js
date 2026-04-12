@@ -577,12 +577,18 @@ async function refreshWalletList() {
       for (const w of list) {
         const opt = document.createElement('option');
         opt.value = w.id;
-        opt.textContent = `${w.name} (${w.id.slice(0, 12)}...)`;
+        const addrShort = w.address ? `${w.address.slice(0, 14)}...` : 'no address';
+        opt.textContent = `${w.name || w.id} \u2192 ${addrShort}`;
         if (w.id === active) opt.selected = true;
         sel.appendChild(opt);
       }
     }
-    $('walletIdDisplay').textContent = active || '\u2014';
+    const wid = $('walletIdDisplay');
+    if (wid) wid.textContent = active || '';
+    if (winfo.address) {
+      $('lastAddr').textContent = winfo.address;
+      $('mineAddr').value = winfo.address;
+    }
   } catch {}
 }
 
@@ -593,11 +599,9 @@ $('walletSelect').addEventListener('change', async () => {
   try {
     const res = await window.synorix.walletSwitch(cfg.synorixCliPath, wid);
     if (res.ok) {
-      $('walletIdDisplay').textContent = wid;
       log(`Switched to wallet: ${wid}`);
       showToast('Wallet switched.', 'success');
-      $('lastAddr').textContent = '\u2014';
-      $('mineAddr').value = '';
+      await refreshWalletList();
       void refreshStatus();
     }
   } catch (e) {
@@ -618,11 +622,13 @@ $('btnCreateNamed').addEventListener('click', async () => {
     const res = await window.synorix.walletCreateNamed(r.synorixCliPath, name);
     if (res.ok) {
       log(`Wallet "${res.walletName}" created (${res.walletId}).`);
+      if (res.address) {
+        log(`Address: ${res.address}`);
+        $('lastAddr').textContent = res.address;
+        $('mineAddr').value = res.address;
+      }
       showToast(`Wallet "${res.walletName}" created.`, 'success');
-      $('walletIdDisplay').textContent = res.walletId;
       $('newWalletName').value = '';
-      $('lastAddr').textContent = '\u2014';
-      $('mineAddr').value = '';
       await refreshWalletList();
       void refreshStatus();
     }
@@ -631,13 +637,6 @@ $('btnCreateNamed').addEventListener('click', async () => {
     showToast(humanError(e), 'error');
   }
 });
-
-if ($('btnCopyWalletId')) {
-  $('btnCopyWalletId').addEventListener('click', () => {
-    const t = $('walletIdDisplay').textContent;
-    if (t && t !== '\u2014') copyToClipboard(t);
-  });
-}
 
 if ($('btnCopyAddr')) {
   $('btnCopyAddr').addEventListener('click', () => {

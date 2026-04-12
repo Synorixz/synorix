@@ -189,11 +189,15 @@ function getWalletList() {
   return list;
 }
 
-function addWalletToList(id, name) {
+function addWalletToList(id, name, address) {
   const cfg = loadConfig();
   const list = Array.isArray(cfg.wallets) ? [...cfg.wallets] : [];
-  if (!list.some((w) => w.id === id)) {
-    list.push({ id, name: name || id });
+  const existing = list.find((w) => w.id === id);
+  if (existing) {
+    if (name) existing.name = name;
+    if (address) existing.address = address;
+  } else {
+    list.push({ id, name: name || id, address: address || '' });
   }
   saveConfig({ wallets: list, activeWallet: id });
 }
@@ -1760,7 +1764,7 @@ async function ensureUserWallet(synorixCliPath) {
   let wid = getWalletId();
   if (!wid || wid === 'default') {
     wid = generateWalletId();
-    addWalletToList(wid, 'Default Wallet');
+    addWalletToList(wid, 'Default Wallet', '');
     saveConfig({ walletId: wid, activeWallet: wid });
   }
   try {
@@ -1814,8 +1818,13 @@ ipcMain.handle('wallet:createNamed', async (_e, { synorixCliPath, walletName }) 
       const m = String(e && e.message ? e.message : '').toLowerCase();
       if (!m.includes('already loaded')) throw e;
     }
-    addWalletToList(wid, name);
-    return { ok: true, walletId: wid, walletName: name };
+    let addr = '';
+    try {
+      const addrRaw = await runCli(synorixCliPath, [`-rpcwallet=${wid}`, 'getnewaddress']);
+      addr = String(addrRaw || '').trim();
+    } catch { /* address generation optional at this stage */ }
+    addWalletToList(wid, name, addr);
+    return { ok: true, walletId: wid, walletName: name, address: addr };
   } catch (e) {
     if (isRpcConnectionLikeError(String(e && e.message))) throw new Error(MSG_RPC_OFFLINE);
     throw new Error(toUserMessage(e));
@@ -1871,7 +1880,12 @@ ipcMain.handle('wallet:info', () => {
   const wid = getWalletId();
   const list = getWalletList();
   const entry = list.find((w) => w.id === wid);
-  return { walletId: wid, walletName: entry ? entry.name : wid, wallets: list };
+  return {
+    walletId: wid,
+    walletName: entry ? entry.name : wid,
+    address: entry ? (entry.address || '') : '',
+    wallets: list,
+  };
 });
 
 ipcMain.handle('wallet:newaddress', async (_e, { synorixCliPath }) => {
@@ -1882,7 +1896,10 @@ ipcMain.handle('wallet:newaddress', async (_e, { synorixCliPath }) => {
     }
     await ensureUserWallet(synorixCliPath);
     const wid = getWalletId();
-    return await runCli(synorixCliPath, [`-rpcwallet=${wid}`, 'getnewaddress']);
+    const addr = await runCli(synorixCliPath, [`-rpcwallet=${wid}`, 'getnewaddress']);
+    const addrStr = String(addr || '').trim();
+    if (addrStr) addWalletToList(wid, null, addrStr);
+    return addrStr;
   } catch (e) {
     if (isRpcConnectionLikeError(String(e && e.message))) {
       throw new Error(MSG_RPC_OFFLINE);

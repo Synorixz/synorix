@@ -405,6 +405,16 @@ button.danger {
   padding: 0;
   color: var(--text);
 }
+.addr-main {
+  background: rgba(61, 156, 245, 0.06);
+  border: 1px solid rgba(61, 156, 245, 0.18);
+  margin-bottom: 0.65rem;
+}
+.addr-highlight {
+  font-size: 0.88rem !important;
+  font-weight: 700 !important;
+  color: var(--accent) !important;
+}
 
 /* ---- Hint ---- */
 .hint {
