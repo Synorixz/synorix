@@ -244,14 +244,45 @@ async function refreshStatus() {
   setMiningUi();
 }
 
+let txPollTimer = null;
+
+function renderTransactions(txList) {
+  const tbody = $('txBody');
+  if (!tbody) return;
+  if (!Array.isArray(txList) || txList.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="tx-empty">No transactions yet</td></tr>';
+    return;
+  }
+  const sorted = [...txList].sort((a, b) => (b.time || 0) - (a.time || 0));
+  tbody.innerHTML = sorted.slice(0, 30).map((tx) => {
+    const date = tx.time ? new Date(tx.time * 1000).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '\u2014';
+    const cat = String(tx.category || 'unknown');
+    const amt = Number(tx.amount || 0);
+    const amtClass = amt >= 0 ? 'tx-amount-pos' : 'tx-amount-neg';
+    const addr = tx.address ? `${String(tx.address).slice(0, 14)}...` : '\u2014';
+    const conf = tx.confirmations != null ? String(tx.confirmations) : '\u2014';
+    return `<tr><td>${date}</td><td>${cat}</td><td class="${amtClass}">${amt.toFixed(8)}</td><td title="${tx.address || ''}">${addr}</td><td>${conf}</td></tr>`;
+  }).join('');
+}
+
+async function refreshTransactions() {
+  try {
+    const txList = await window.synorix.walletTransactions(cfg.synorixCliPath, 30);
+    renderTransactions(txList);
+  } catch { /* silent */ }
+}
+
 function startPoll() {
   stopPoll();
   pollTimer = setInterval(refreshStatus, 2500);
   refreshStatus();
+  txPollTimer = setInterval(refreshTransactions, 5000);
+  refreshTransactions();
 }
 
 function stopPoll() {
   if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  if (txPollTimer) { clearInterval(txPollTimer); txPollTimer = null; }
 }
 
 async function requireBinaries() {

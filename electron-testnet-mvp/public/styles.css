@@ -434,6 +434,33 @@ code {
   line-height: 1.5;
 }
 
+/* ---- Transaction Table ---- */
+.tx-panel { padding-bottom: 0.75rem; }
+.tx-table-wrap { max-height: 200px; overflow: auto; border-radius: 10px; }
+.tx-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 0.78rem;
+  font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+}
+.tx-table thead th {
+  position: sticky; top: 0;
+  background: rgba(0, 0, 0, 0.5); color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.04em;
+  font-size: 0.68rem; font-weight: 600;
+  padding: 0.5rem 0.6rem; text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.tx-table tbody td {
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  color: var(--text);
+}
+.tx-table tbody tr:nth-child(even) { background: rgba(255, 255, 255, 0.02); }
+.tx-table tbody tr:hover { background: rgba(61, 156, 245, 0.06); }
+.tx-empty { text-align: center; color: var(--muted); padding: 1.5rem; }
+.tx-amount-pos { color: var(--ok); }
+.tx-amount-neg { color: var(--err); }
+
 /* ---- Scrollbar ---- */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
