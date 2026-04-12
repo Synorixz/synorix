@@ -329,6 +329,7 @@ code {
   backdrop-filter: blur(6px);
   display: flex; align-items: center; justify-content: center;
 }
+.modal-overlay[hidden] { display: none; }
 .modal-card {
   background: var(--panel-solid); border: 1px solid var(--border-hover);
   border-radius: 18px; padding: 1.75rem 2rem;
