@@ -440,6 +440,26 @@ code {
   line-height: 1.5;
 }
 
+/* ---- Wallet Selector ---- */
+.wallet-selector {
+  display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.75rem;
+}
+.wallet-selector label {
+  font-size: 0.78rem; color: var(--muted); font-weight: 600; white-space: nowrap;
+}
+.wallet-selector select {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.35); border: 1px solid var(--border);
+  color: var(--text); padding: 0.45rem 0.65rem; border-radius: 10px;
+  font-size: 0.84rem; outline: none; cursor: pointer;
+}
+.wallet-selector select:focus { border-color: var(--accent); }
+
+.wallet-create-row {
+  grid-template-columns: auto 1fr auto !important;
+  margin-bottom: 0.75rem !important;
+}
+
 /* ---- Copy Button ---- */
 .copy-row { display: flex; align-items: center; gap: 0.4rem; }
 .copy-btn {

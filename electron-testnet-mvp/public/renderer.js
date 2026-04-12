@@ -560,6 +560,78 @@ $('btnSend').addEventListener('click', async () => {
   }
 });
 
+async function refreshWalletList() {
+  try {
+    const winfo = await window.synorix.walletInfo();
+    const list = winfo.wallets || [];
+    const active = winfo.walletId || '';
+    const sel = $('walletSelect');
+    if (!sel) return;
+    sel.innerHTML = '';
+    if (list.length === 0) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'No wallets yet';
+      sel.appendChild(opt);
+    } else {
+      for (const w of list) {
+        const opt = document.createElement('option');
+        opt.value = w.id;
+        opt.textContent = `${w.name} (${w.id.slice(0, 12)}...)`;
+        if (w.id === active) opt.selected = true;
+        sel.appendChild(opt);
+      }
+    }
+    $('walletIdDisplay').textContent = active || '\u2014';
+  } catch {}
+}
+
+$('walletSelect').addEventListener('change', async () => {
+  const sel = $('walletSelect');
+  const wid = sel.value;
+  if (!wid) return;
+  try {
+    const res = await window.synorix.walletSwitch(cfg.synorixCliPath, wid);
+    if (res.ok) {
+      $('walletIdDisplay').textContent = wid;
+      log(`Switched to wallet: ${wid}`);
+      showToast('Wallet switched.', 'success');
+      $('lastAddr').textContent = '\u2014';
+      $('mineAddr').value = '';
+      void refreshStatus();
+    }
+  } catch (e) {
+    log(humanError(e), true);
+    showToast(humanError(e), 'error');
+  }
+});
+
+$('btnCreateNamed').addEventListener('click', async () => {
+  const name = $('newWalletName').value.trim();
+  if (!name) {
+    showToast('Enter a wallet name.', 'error');
+    return;
+  }
+  const r = await requireBinaries();
+  if (!r) return;
+  try {
+    const res = await window.synorix.walletCreateNamed(r.synorixCliPath, name);
+    if (res.ok) {
+      log(`Wallet "${res.walletName}" created (${res.walletId}).`);
+      showToast(`Wallet "${res.walletName}" created.`, 'success');
+      $('walletIdDisplay').textContent = res.walletId;
+      $('newWalletName').value = '';
+      $('lastAddr').textContent = '\u2014';
+      $('mineAddr').value = '';
+      await refreshWalletList();
+      void refreshStatus();
+    }
+  } catch (e) {
+    log(humanError(e), true);
+    showToast(humanError(e), 'error');
+  }
+});
+
 if ($('btnCopyWalletId')) {
   $('btnCopyWalletId').addEventListener('click', () => {
     const t = $('walletIdDisplay').textContent;
@@ -631,6 +703,7 @@ if (typeof window.synorix.onNodeHealth === 'function') {
           }
           setNodeRunningUi(true, { fullyReady: true });
           updateWalletMiningFromNodeState('ready');
+          await refreshWalletList();
         }
       } catch (e) {
         log(humanError(e), true);
@@ -642,12 +715,7 @@ if (typeof window.synorix.onNodeHealth === 'function') {
   } else {
     log('Could not initialize. Check configuration.', true);
   }
-  try {
-    const winfo = await window.synorix.walletInfo();
-    if (winfo.walletId) {
-      $('walletIdDisplay').textContent = winfo.walletId;
-    }
-  } catch { /* wallet not yet created */ }
+  await refreshWalletList();
   setMiningUi();
   updateAutoMineButton();
 })();

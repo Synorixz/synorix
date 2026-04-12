@@ -140,6 +140,8 @@ function mergeConfigDefaults(raw) {
     rpcPassword: (c.rpcPassword && String(c.rpcPassword).trim()) || FIXED_RPC_PASSWORD,
     rpcTimeoutMs: Number.isFinite(Number(c.rpcTimeoutMs)) ? Number(c.rpcTimeoutMs) : 15000,
     walletId: (c.walletId && String(c.walletId).trim()) || '',
+    wallets: Array.isArray(c.wallets) ? c.wallets : [],
+    activeWallet: (c.activeWallet && String(c.activeWallet).trim()) || '',
     synorixdPath: c.synorixdPath || '',
     synorixCliPath: c.synorixCliPath || '',
     synorixBinDir: c.synorixBinDir || '',
@@ -168,12 +170,36 @@ function saveConfig(cfg) {
 }
 
 function getWalletId() {
-  return loadConfig().walletId || 'default';
+  const cfg = loadConfig();
+  return cfg.activeWallet || cfg.walletId || 'default';
 }
 
 function generateWalletId() {
   const hex = require('crypto').randomBytes(4).toString('hex');
   return `snrx_${hex}`;
+}
+
+function getWalletList() {
+  const cfg = loadConfig();
+  const list = Array.isArray(cfg.wallets) ? [...cfg.wallets] : [];
+  const active = getWalletId();
+  if (active && active !== 'default' && !list.some((w) => w.id === active)) {
+    list.push({ id: active, name: active });
+  }
+  return list;
+}
+
+function addWalletToList(id, name) {
+  const cfg = loadConfig();
+  const list = Array.isArray(cfg.wallets) ? [...cfg.wallets] : [];
+  if (!list.some((w) => w.id === id)) {
+    list.push({ id, name: name || id });
+  }
+  saveConfig({ wallets: list, activeWallet: id });
+}
+
+function switchActiveWallet(id) {
+  saveConfig({ activeWallet: id });
 }
 
 function getDatadir() {
@@ -1734,7 +1760,8 @@ async function ensureUserWallet(synorixCliPath) {
   let wid = getWalletId();
   if (!wid || wid === 'default') {
     wid = generateWalletId();
-    saveConfig({ walletId: wid });
+    addWalletToList(wid, 'Default Wallet');
+    saveConfig({ walletId: wid, activeWallet: wid });
   }
   try {
     const loadedRaw = await runCli(synorixCliPath, ['listwallets']);
@@ -1767,6 +1794,56 @@ async function ensureUserWallet(synorixCliPath) {
   return wid;
 }
 
+ipcMain.handle('wallet:createNamed', async (_e, { synorixCliPath, walletName }) => {
+  try {
+    const wr = await waitForRPCReady(synorixCliPath);
+    if (!wr.ok) throw new Error(wr.message || MSG_RPC_TIMED_OUT);
+    const name = String(walletName || '').trim();
+    if (!name) throw new Error('Wallet name cannot be empty.');
+    if (name.length > 30) throw new Error('Wallet name too long (max 30 characters).');
+    const wid = `snrx_${name.toLowerCase().replace(/[^a-z0-9_]/g, '_')}`;
+    try {
+      await runCli(synorixCliPath, ['createwallet', wid]);
+    } catch (e) {
+      const m = String(e && e.message ? e.message : '').toLowerCase();
+      if (!m.includes('already exists') && !m.includes('duplicate')) throw e;
+    }
+    try {
+      await runCli(synorixCliPath, ['loadwallet', wid]);
+    } catch (e) {
+      const m = String(e && e.message ? e.message : '').toLowerCase();
+      if (!m.includes('already loaded')) throw e;
+    }
+    addWalletToList(wid, name);
+    return { ok: true, walletId: wid, walletName: name };
+  } catch (e) {
+    if (isRpcConnectionLikeError(String(e && e.message))) throw new Error(MSG_RPC_OFFLINE);
+    throw new Error(toUserMessage(e));
+  }
+});
+
+ipcMain.handle('wallet:list', () => {
+  return getWalletList();
+});
+
+ipcMain.handle('wallet:switch', async (_e, { synorixCliPath, walletId }) => {
+  try {
+    const wr = await waitForRPCReady(synorixCliPath);
+    if (!wr.ok) throw new Error(wr.message || MSG_RPC_TIMED_OUT);
+    try {
+      await runCli(synorixCliPath, ['loadwallet', walletId]);
+    } catch (e) {
+      const m = String(e && e.message ? e.message : '').toLowerCase();
+      if (!m.includes('already loaded')) throw e;
+    }
+    switchActiveWallet(walletId);
+    return { ok: true, walletId };
+  } catch (e) {
+    if (isRpcConnectionLikeError(String(e && e.message))) throw new Error(MSG_RPC_OFFLINE);
+    throw new Error(toUserMessage(e));
+  }
+});
+
 ipcMain.handle('wallet:create', async (_e, { synorixCliPath }) => {
   try {
     const wr = await waitForRPCReady(synorixCliPath);
@@ -1791,7 +1868,10 @@ ipcMain.handle('wallet:create', async (_e, { synorixCliPath }) => {
 });
 
 ipcMain.handle('wallet:info', () => {
-  return { walletId: getWalletId() };
+  const wid = getWalletId();
+  const list = getWalletList();
+  const entry = list.find((w) => w.id === wid);
+  return { walletId: wid, walletName: entry ? entry.name : wid, wallets: list };
 });
 
 ipcMain.handle('wallet:newaddress', async (_e, { synorixCliPath }) => {
