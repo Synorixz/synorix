@@ -23,6 +23,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <cstdint>
 #include <cstring>
 #include <iterator>
@@ -80,8 +81,9 @@ public:
         consensus.CSVHeight = 1;
         consensus.SegwitHeight = 1;
         consensus.MinBIP9WarningHeight = 0;
-        // Easiest valid maximum target (same numeric idea as regtest) so genesis nBits can use 0x207fffff.
-        consensus.powLimit = uint256{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"};
+        // Synorix mainnet PoW limit: target corresponding to compact nBits 0x1e0ffff0
+        // (Litecoin difficulty-1 level). Genesis is mined to satisfy this real target.
+        consensus.powLimit = uint256{"00000ffff0000000000000000000000000000000000000000000000000000000"};
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
         consensus.nPowTargetSpacing = 2.5 * 60;
         consensus.fPowAllowMinDifficultyBlocks = false;
@@ -102,17 +104,22 @@ public:
          * The characters are rarely used upper ASCII, not valid as UTF-8, and produce
          * a large 32-bit integer with any alignment.
          */
-        pchMessageStart[0] = 0xf9;
-        pchMessageStart[1] = 0xbe;
-        pchMessageStart[2] = 0xb4;
-        pchMessageStart[3] = 0xd9;
-        nDefaultPort = 8333;
+        // Synorix mainnet network magic (distinct from Bitcoin to avoid cross-network contamination).
+        pchMessageStart[0] = 0xc7;
+        pchMessageStart[1] = 0x9b;
+        pchMessageStart[2] = 0x53;
+        pchMessageStart[3] = 0xe1;
+        nDefaultPort = 9333;
         nPruneAfterHeight = 100000;
         m_assumed_blockchain_size = 1;
         m_assumed_chain_state_size = 1;
 
-        genesis = CreateGenesisBlock(1743888000, 0, 0x207fffff, 1, 50 * COIN);
+        // Genesis mined for nBits 0x1e0ffff0 (see contrib/synorix/genesis_miner.py):
+        //   nonce=1310306  hash=00000d35f8eeaa7067533256759914bbd1a53f7cc772087956935ba48cb15da2
+        genesis = CreateGenesisBlock(1743888000, 1310306, 0x1e0ffff0, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
+        assert(consensus.hashGenesisBlock == uint256{"00000d35f8eeaa7067533256759914bbd1a53f7cc772087956935ba48cb15da2"});
+        assert(genesis.hashMerkleRoot == uint256{"ded041be0b9b58d3d7bc497061ba0825dade7f3f40ab0cc6d3360ef4e91eadba"});
 
         // Note that of those which support the service bits prefix, most only support a subset of
         // possible options.
@@ -131,6 +138,11 @@ public:
         base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x88, 0xAD, 0xE4};
 
         bech32_hrp = "snrx";   // bech32 adresleri snrx1... şeklinde olsun
+
+        // Synorix Treasury: 5% of each block subsidy is paid to this P2PKH script.
+        // Address: Sc6AghkPkxmpKfoTpUUQPmoQ4TJDmJnDyz (key held offline by project owner).
+        m_treasury_percent = 5;
+        m_treasury_script = ParseHex("76a914a24cf3f4d482da9ee820037962e670f43797468488ac");
 
         vFixedSeeds = std::vector<uint8_t>(std::begin(chainparams_seed_main), std::end(chainparams_seed_main));
 
@@ -170,7 +182,7 @@ public:
         consensus.CSVHeight = 1;
         consensus.SegwitHeight = 1;
         consensus.MinBIP9WarningHeight = 0;
-        consensus.powLimit = uint256{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"};
+        consensus.powLimit = uint256{"00000ffff0000000000000000000000000000000000000000000000000000000"};
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
         consensus.nPowTargetSpacing = 2.5 * 60;
         consensus.fPowAllowMinDifficultyBlocks = true;
@@ -186,17 +198,24 @@ public:
         consensus.nMinimumChainWork = uint256{};
         consensus.defaultAssumeValid = uint256{};
 
-        pchMessageStart[0] = 0x0b;
-        pchMessageStart[1] = 0x11;
-        pchMessageStart[2] = 0x09;
-        pchMessageStart[3] = 0x07;
-        nDefaultPort = 18333;
+        // Synorix testnet3 network magic (distinct from Bitcoin testnet).
+        pchMessageStart[0] = 0x4e;
+        pchMessageStart[1] = 0x9b;
+        pchMessageStart[2] = 0x53;
+        pchMessageStart[3] = 0xc7;
+        nDefaultPort = 19333;
         nPruneAfterHeight = 1000;
         m_assumed_blockchain_size = 1;
         m_assumed_chain_state_size = 1;
 
-        genesis = CreateGenesisBlock(1743888000, 0, 0x207fffff, 1, 50 * COIN);
+        // Same genesis params as mainnet (mined for nBits 0x1e0ffff0).
+        genesis = CreateGenesisBlock(1743888000, 1310306, 0x1e0ffff0, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
+        assert(consensus.hashGenesisBlock == uint256{"00000d35f8eeaa7067533256759914bbd1a53f7cc772087956935ba48cb15da2"});
+
+        // Synorix Treasury: 5% of block subsidy (same key as mainnet).
+        m_treasury_percent = 5;
+        m_treasury_script = ParseHex("76a914a24cf3f4d482da9ee820037962e670f43797468488ac");
 
         vFixedSeeds.clear();
         vSeeds.clear();

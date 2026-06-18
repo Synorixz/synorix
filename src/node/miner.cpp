@@ -171,12 +171,22 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock()
     coinbaseTx.vin[0].nSequence = CTxIn::MAX_SEQUENCE_NONFINAL; // Make sure timelock is enforced.
     coinbase_tx.sequence = coinbaseTx.vin[0].nSequence;
 
-    // Add an output that spends the full coinbase reward.
-    coinbaseTx.vout.resize(1);
-    coinbaseTx.vout[0].scriptPubKey = m_options.coinbase_output_script;
     // Block subsidy + fees
-    const CAmount block_reward{nFees + GetBlockSubsidy(nHeight, chainparams.GetConsensus())};
-    coinbaseTx.vout[0].nValue = block_reward;
+    const CAmount subsidy{GetBlockSubsidy(nHeight, chainparams.GetConsensus())};
+    const CAmount block_reward{nFees + subsidy};
+    // Synorix: carve out the treasury share of the subsidy into a second output.
+    CAmount treasury_amount{0};
+    if (chainparams.TreasuryPercent() > 0 && !chainparams.TreasuryScript().empty()) {
+        treasury_amount = subsidy * chainparams.TreasuryPercent() / 100;
+    }
+    // Add the miner output (spends the reward minus the treasury share).
+    coinbaseTx.vout.resize(treasury_amount > 0 ? 2 : 1);
+    coinbaseTx.vout[0].scriptPubKey = m_options.coinbase_output_script;
+    coinbaseTx.vout[0].nValue = block_reward - treasury_amount;
+    if (treasury_amount > 0) {
+        coinbaseTx.vout[1].scriptPubKey = CScript(chainparams.TreasuryScript().begin(), chainparams.TreasuryScript().end());
+        coinbaseTx.vout[1].nValue = treasury_amount;
+    }
     coinbase_tx.block_reward_remaining = block_reward;
 
     // Start the coinbase scriptSig with the block height as required by BIP34.

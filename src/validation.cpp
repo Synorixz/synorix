@@ -2612,6 +2612,26 @@ bool Chainstate::ConnectBlock(const CBlock& block, BlockValidationState& state, 
         state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-cb-amount",
                       strprintf("coinbase pays too much (actual=%d vs limit=%d)", block.vtx[0]->GetValueOut(), blockReward));
     }
+
+    // Synorix: enforce the on-chain Treasury. A fixed percentage of the block
+    // subsidy must be paid to the treasury script in the coinbase. The genesis
+    // block (height 0) is exempt. The "pays too much" check above still caps the
+    // total, so the miner simply receives subsidy - treasury + fees.
+    if (pindex->nHeight > 0 && params.TreasuryPercent() > 0 && !params.TreasuryScript().empty() && state.IsValid()) {
+        const CAmount subsidy = GetBlockSubsidy(pindex->nHeight, params.GetConsensus());
+        const CAmount treasury_required = subsidy * params.TreasuryPercent() / 100;
+        if (treasury_required > 0) {
+            const CScript treasury_spk(params.TreasuryScript().begin(), params.TreasuryScript().end());
+            CAmount treasury_paid = 0;
+            for (const CTxOut& out : block.vtx[0]->vout) {
+                if (out.scriptPubKey == treasury_spk) treasury_paid += out.nValue;
+            }
+            if (treasury_paid < treasury_required) {
+                state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-cb-treasury",
+                              strprintf("coinbase underpays the treasury (paid=%d vs required=%d)", treasury_paid, treasury_required));
+            }
+        }
+    }
     if (control) {
         auto parallel_result = control->Complete();
         if (parallel_result.has_value() && state.IsValid()) {

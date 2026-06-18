@@ -115,6 +115,10 @@ public:
     const std::string& Bech32HRP() const { return bech32_hrp; }
     const std::vector<uint8_t>& FixedSeeds() const { return vFixedSeeds; }
     const HeadersSyncParams& HeadersSync() const { return m_headers_sync_params; }
+    /** Treasury scriptPubKey that receives the treasury share of each block subsidy (empty = disabled). */
+    const std::vector<unsigned char>& TreasuryScript() const { return m_treasury_script; }
+    /** Treasury share as an integer percentage of the block subsidy (0 = disabled). */
+    int TreasuryPercent() const { return m_treasury_percent; }
 
     std::optional<AssumeutxoData> AssumeutxoForHeight(int height) const
     {
@@ -172,6 +176,8 @@ protected:
     std::vector<std::string> vSeeds;
     std::vector<unsigned char> base58Prefixes[MAX_BASE58_TYPES];
     std::string bech32_hrp;
+    std::vector<unsigned char> m_treasury_script{};
+    int m_treasury_percent{0};
     ChainType m_chain_type;
     CBlock genesis;
     std::vector<uint8_t> vFixedSeeds;

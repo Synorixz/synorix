@@ -175,7 +175,8 @@ function getWalletId() {
 }
 
 function generateWalletId() {
-  const hex = require('crypto').randomBytes(4).toString('hex');
+  // 8 random bytes (64 bits) so per-user wallet IDs never collide on the shared node.
+  const hex = require('crypto').randomBytes(8).toString('hex');
   return `snrx_${hex}`;
 }
 
@@ -1813,7 +1814,12 @@ ipcMain.handle('wallet:createNamed', async (_e, { synorixCliPath, walletName }) 
     const name = String(walletName || '').trim();
     if (!name) throw new Error('Wallet name cannot be empty.');
     if (name.length > 30) throw new Error('Wallet name too long (max 30 characters).');
-    const wid = `snrx_${name.toLowerCase().replace(/[^a-z0-9_]/g, '_')}`;
+    // Wallet IDs must be globally unique on the shared node: two users picking the
+    // same friendly name must NOT collide onto the same on-node wallet. Derive the id
+    // from the name (for readability) plus a random suffix that guarantees uniqueness.
+    const safe = name.toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 20);
+    const suffix = require('crypto').randomBytes(8).toString('hex');
+    const wid = `snrx_${safe}_${suffix}`;
     try {
       await runCli(synorixCliPath, ['createwallet', wid]);
     } catch (e) {

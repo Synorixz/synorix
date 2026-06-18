@@ -7,25 +7,25 @@ Synorix is a progressive Bitcoin fork designed to solve the practical limitation
 ## Key Features
 
 * **Block Time:** 2.5 minutes (4x faster than Bitcoin for rapid transactions)
-* **Block Size:** 8 MB (Significantly higher transaction capacity/throughput)
+* **Block Capacity:** 8,000,000 weight units (~2x Bitcoin's transaction throughput)
 * **Supply:** 21,000,000 SNRX (Hard-capped, identical to Bitcoin)
-* **Halving:** Every 840,000 blocks (Maintains the ~4-year cycle)
+* **Block Reward:** 50 SNRX, halving every 210,000 blocks (~1 year at 2.5-minute blocks)
 * **Consensus:** SHA-256 Proof-of-Work
-* **Fair Launch:** 0% Premine, No ICO, No Team Allocation. 100% publicly mined.
-* **On-Chain Treasury:** A predefined portion of network value is routed to a transparent Treasury to fund liquidity, token burns, and ecosystem growth.
-* **Dynamic Difficulty Adjustment (DDA):** Ensures stable 2.5-minute block generation regardless of network hashrate fluctuations.
+* **Fair Launch:** 0% premine, no ICO, no presale, no team allocation at genesis. Coins enter circulation only through mining.
+* **On-Chain Treasury:** 5% of every block subsidy is routed automatically, in the coinbase, to a single transparent Treasury address to fund liquidity, development, and ecosystem growth. The remaining 95% (plus all transaction fees) goes to miners.
+* **Difficulty Adjustment:** Bitcoin-style retargeting every two weeks to keep block times near 2.5 minutes as hashrate changes.
 
 ## Links
 
 * **Website:** [https://synorixcoin.com](https://synorixcoin.com) *(coming soon)*
-* **Whitepaper:** [Synorix Whitepaper](./WHITEPAPER.md)
+* **Whitepaper:** [Synorix Whitepaper (PDF)](./Synorix_Whitepaper.pdf) · [Litepaper (PDF)](./Synorix_Litepaper.pdf)
 * **Explorer:** *(coming soon)*
 * **X (Twitter):** [@SynorixCoin](https://twitter.com/SynorixCoin)
 
 ## Building from Source
 
 ```bash
-git clone [https://github.com/Synorixz/synorix.git](https://github.com/Synorixz/synorix.git)
+git clone https://github.com/Synorixz/synorix.git
 cd synorix
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
