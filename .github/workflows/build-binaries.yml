@@ -1,7 +1,8 @@
 # =============================================================================
 # Synorix — Linux + Windows headless Release binary artifacts
 #
-# Windows: windows-latest = VS 2022 → --preset vs2022 (vs2026 runner'da yok).
+# Windows: windows-latest now ships Visual Studio 18 2026 → --preset vs2026.
+# (The old vs2022 preset's "Visual Studio 17 2022" generator no longer exists on the runner.)
 # vcpkg: BUILD_GUI=OFF yetmez; manifest'te wallet-only + NO_DEFAULT_FEATURES gerekir.
 # Linux: Ubuntu 22.04 + gcc-12 bazen Boost/CMake uyarıları verir; CI için 24.04 + varsayılan
 #        GCC 13 daha stabil (doc/CMakeLists Ubuntu 24.04 cmake sürümünü de listeler).
@@ -160,7 +161,7 @@ jobs:
         with:
           arch: x64
 
-      - name: "[Win] CMake configure (vs2022 preset)"
+      - name: "[Win] CMake configure (vs2026 preset)"
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -173,7 +174,7 @@ jobs:
           cmake --list-presets
           $opts = @(
             '-B', 'build',
-            '--preset', 'vs2022',
+            '--preset', 'vs2026',
             '-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON',
             '-DVCPKG_MANIFEST_FEATURES=wallet',
             '-DBUILD_GUI=OFF',
