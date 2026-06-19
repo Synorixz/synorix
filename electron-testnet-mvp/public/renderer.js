@@ -172,5 +172,5 @@ document.querySelectorAll('[data-close]').forEach((btn) => {
 (async () => {
   setConn('warn');
   await refreshState();
-  pollTimer = setInterval(refreshBalance, 8000);
+  pollTimer = setInterval(() => { if (!$('walletView').hidden) refreshBalance(); }, 15000);
 })();

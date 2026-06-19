@@ -1404,7 +1404,18 @@ function ncActiveMeta(store, id) {
   const wid = id || store.activeId;
   return store.wallets.find((w) => w.id === wid) || store.wallets.find((w) => w.id === store.activeId) || store.wallets[0] || null;
 }
-const ncRpc = (method, params = []) => rpcCall(method, params);
+// scantxoutset can only run ONE at a time on a node ("Scan already in progress").
+// Serialize all scan calls through a single queue so concurrent balance polls /
+// sends never collide. Other RPCs pass straight through.
+let _scanQueue = Promise.resolve();
+function ncRpc(method, params = []) {
+  if (method !== 'scantxoutset') return rpcCall(method, params);
+  const run = _scanQueue.catch(() => {}).then(() => rpcCall(method, params));
+  _scanQueue = run.catch(() => {});
+  return run;
+}
+// Per-wallet balance cache so transient scan hiccups never blank the UI or throw.
+const _balCache = new Map();
 
 ipcMain.handle('nc:state', () => {
   const s = ncLoad();
@@ -1447,8 +1458,15 @@ ipcMain.handle('nc:receiveAddress', (_e, { id } = {}) => {
 ipcMain.handle('nc:balance', async (_e, { id } = {}) => {
   const s = ncLoad(); const meta = ncActiveMeta(s, id);
   if (!meta) return { spendable: 0, immature: 0, total: 0, noWallet: true };
-  try { return await ncwallet.getBalance(meta, ncRpc); }
-  catch (e) { return { spendable: 0, immature: 0, total: 0, error: String(e && e.message) }; }
+  try {
+    const bal = await ncwallet.getBalance(meta, ncRpc);
+    _balCache.set(meta.id, bal);
+    return bal;
+  } catch (e) {
+    const cached = _balCache.get(meta.id);
+    if (cached) return { ...cached, stale: true };
+    return { spendable: 0, immature: 0, total: 0, error: String(e && e.message) };
+  }
 });
 
 ipcMain.handle('nc:reveal', (_e, { id, password } = {}) => {
