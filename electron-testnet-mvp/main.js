@@ -1761,7 +1761,15 @@ ipcMain.handle('rpc:getconnectioncount', async (_e, { synorixCliPath }) => {
   }
 });
 
-async function ensureUserWallet(synorixCliPath) {
+let _ensureWalletInFlight = null;
+function ensureUserWallet(synorixCliPath) {
+  // Serialize concurrent callers (node:start + 2.5s balance polling) so they don't
+  // race to loadwallet/createwallet the same wallet and hit SQLite exclusive-lock errors.
+  if (_ensureWalletInFlight) return _ensureWalletInFlight;
+  _ensureWalletInFlight = _ensureUserWalletImpl(synorixCliPath).finally(() => { _ensureWalletInFlight = null; });
+  return _ensureWalletInFlight;
+}
+async function _ensureUserWalletImpl(synorixCliPath) {
   let wid = getWalletId();
   if (!wid || wid === 'default') {
     wid = generateWalletId();
