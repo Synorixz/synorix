@@ -2,143 +2,135 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Synorix Testnet</title>
+  <title>Synorix Wallet</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="app">
 
-    <header class="header">
+    <!-- Top bar -->
+    <header class="topbar">
       <div class="brand">
-        <span class="logo">SNRX</span>
-        <div>
-          <h1>Synorix Testnet</h1>
-          <p class="tagline">Node &middot; Wallet &middot; Mining</p>
-        </div>
+        <span class="logo">S</span>
+        <span class="brand-name">Synorix</span>
       </div>
-      <div class="header-badges">
-        <span id="remoteBadge" class="badge badge-info">Remote VPS</span>
-        <span id="nodeBadge" class="badge badge-off">Offline</span>
+      <div class="topbar-right">
+        <span id="netPill" class="net-pill">Testnet</span>
+        <span class="conn" id="conn" title="Connecting">
+          <span class="conn-dot" id="connDot"></span>
+          <span class="conn-text" id="connText">Connecting</span>
+        </span>
       </div>
     </header>
 
-    <section class="dashboard">
-      <div class="stat-card" id="cardNode">
-        <div class="stat-icon"><span class="status-dot" id="dotNode"></span></div>
-        <div class="stat-body">
-          <span class="stat-label">Node Status</span>
-          <span class="stat-value" id="stNodeRun">Stopped</span>
+    <!-- Balance hero -->
+    <section class="hero">
+      <div class="wallet-switch">
+        <button type="button" class="wallet-chip" id="walletChip">
+          <span class="wallet-chip-name" id="activeWalletName">My Wallet</span>
+          <span class="wallet-chip-caret">&#9662;</span>
+        </button>
+        <div class="wallet-menu" id="walletMenu" hidden>
+          <div class="wallet-menu-list" id="walletMenuList"></div>
+          <button type="button" class="wallet-menu-new" id="btnOpenCreate">+ New Wallet</button>
         </div>
       </div>
-      <div class="stat-card" id="cardBlocks">
-        <div class="stat-icon"><span class="stat-emoji">&#9646;</span></div>
-        <div class="stat-body">
-          <span class="stat-label">Block Height</span>
-          <span class="stat-value" id="stBlocks">&mdash;</span>
-        </div>
+
+      <div class="balance">
+        <span class="balance-amount" id="balAmount">0.00</span>
+        <span class="balance-unit">SNRX</span>
       </div>
-      <div class="stat-card" id="cardBalance">
-        <div class="stat-icon"><span class="stat-emoji">&#9733;</span></div>
-        <div class="stat-body">
-          <span class="stat-label">Spendable</span>
-          <span class="stat-value" id="stBal">&mdash;</span>
-          <span class="stat-sub" id="stImmature"></span>
-        </div>
+      <div class="balance-sub" id="balImmature"></div>
+    </section>
+
+    <!-- Primary actions -->
+    <section class="actions-primary">
+      <button type="button" class="action-btn receive" id="btnTabReceive">
+        <span class="action-ic">&#8595;</span><span>Receive</span>
+      </button>
+      <button type="button" class="action-btn send" id="btnTabSend">
+        <span class="action-ic">&#8593;</span><span>Send</span>
+      </button>
+    </section>
+
+    <!-- Receive panel -->
+    <section class="panel slide" id="panelReceive" hidden>
+      <div class="panel-head"><h2>Receive SNRX</h2><button class="x" id="closeReceive">&times;</button></div>
+      <p class="panel-hint">Share this address to receive coins.</p>
+      <div class="addr-box">
+        <code id="recvAddr" class="addr-text">&mdash;</code>
+        <button type="button" class="copy-btn" id="btnCopyAddr" title="Copy">&#128203;</button>
       </div>
-      <div class="stat-card" id="cardMining">
-        <div class="stat-icon"><span class="status-dot" id="dotMine"></span></div>
-        <div class="stat-body">
-          <span class="stat-label">Mining</span>
-          <span class="stat-value" id="stMining">Idle</span>
-        </div>
-      </div>
-      <div class="stat-card" id="cardPeers">
-        <div class="stat-icon"><span class="stat-emoji">&#8644;</span></div>
-        <div class="stat-body">
-          <span class="stat-label">Peers</span>
-          <span class="stat-value" id="stPeers">&mdash;</span>
-        </div>
+      <button type="button" class="ghost-btn" id="btnNewAddr">Generate new address</button>
+    </section>
+
+    <!-- Send panel -->
+    <section class="panel slide" id="panelSend" hidden>
+      <div class="panel-head"><h2>Send SNRX</h2><button class="x" id="closeSend">&times;</button></div>
+      <label class="field-label">Recipient address</label>
+      <input type="text" id="sendTo" class="field" placeholder="snrx1... / tsnrx1..." />
+      <label class="field-label">Amount (SNRX)</label>
+      <input type="number" id="sendAmount" class="field" min="0.00000001" step="0.00000001" placeholder="0.00" />
+      <button type="button" class="primary-btn" id="btnSend">Send Coins</button>
+      <p class="panel-hint small" id="sendHint">Mining rewards need 100 confirmations before they can be spent.</p>
+    </section>
+
+    <!-- Create wallet panel -->
+    <section class="panel slide" id="panelCreate" hidden>
+      <div class="panel-head"><h2>New Wallet</h2><button class="x" id="closeCreate">&times;</button></div>
+      <label class="field-label">Wallet name</label>
+      <input type="text" id="newWalletName" class="field" maxlength="30" placeholder="e.g. Savings" />
+      <button type="button" class="primary-btn" id="btnCreateNamed">Create Wallet</button>
+    </section>
+
+    <!-- Transactions -->
+    <section class="tx-section">
+      <div class="tx-head"><h2>Activity</h2></div>
+      <div class="tx-list" id="txList">
+        <div class="tx-empty">No transactions yet</div>
       </div>
     </section>
 
-    <section class="panel actions" id="panelActions">
-      <div class="action-group">
-        <h2>Node</h2>
-        <div class="btn-row">
-          <button type="button" class="primary" id="btnStartNode">Connect to Node</button>
-          <button type="button" class="ghost" id="btnStopNode">Disconnect</button>
+    <!-- Advanced (collapsible) -->
+    <section class="advanced">
+      <button type="button" class="advanced-toggle" id="advToggle">Advanced &#9662;</button>
+      <div class="advanced-body" id="advBody" hidden>
+        <div class="adv-stats">
+          <div class="adv-stat"><span>Block height</span><b id="stBlocks">&mdash;</b></div>
+          <div class="adv-stat"><span>Peers</span><b id="stPeers">&mdash;</b></div>
+          <div class="adv-stat"><span>Node</span><b id="stNodeRun">&mdash;</b></div>
         </div>
-        <p class="hint" id="stIbd">&mdash;</p>
-      </div>
-
-      <div class="action-group">
-        <h2>Wallet</h2>
-
-        <div class="wallet-active-card">
-          <div class="wallet-active-top">
-            <div class="wallet-active-info">
-              <span class="wallet-active-name" id="activeWalletName">No Wallet</span>
-              <select id="walletSelect" class="wallet-switch-select"><option value="">Loading...</option></select>
-            </div>
+        <div class="adv-mining">
+          <div class="adv-row">
+            <input type="number" id="mineN" min="1" max="100" value="1" class="field mini" />
+            <input type="text" id="mineAddr" class="field" placeholder="mining address (auto)" />
           </div>
-          <div class="wallet-addr-display">
-            <span class="wallet-addr-label">Receive Address</span>
-            <div class="copy-row">
-              <code id="lastAddr" class="wallet-addr-value">&mdash;</code>
-              <button type="button" class="copy-btn" id="btnCopyAddr" title="Copy address">&#128203;</button>
-            </div>
+          <div class="adv-row">
+            <button type="button" class="ghost-btn" id="btnMine">Mine Once</button>
+            <button type="button" class="ghost-btn" id="btnAutoMine"><span class="btn-text">Auto Mine</span><span class="spinner" hidden></span></button>
           </div>
         </div>
-
-        <div class="btn-row">
-          <button type="button" class="accent" id="btnNewAddr">Show My Address</button>
-          <button type="button" id="btnCreateWallet" hidden>Create Wallet</button>
+        <div class="adv-node-btns">
+          <button type="button" class="ghost-btn" id="btnStartNode">Reconnect</button>
+          <button type="button" class="ghost-btn" id="btnStopNode">Disconnect</button>
         </div>
-
-        <div class="wallet-create-section">
-          <span class="wallet-create-title">Create New Wallet</span>
-          <div class="wallet-create-form">
-            <input type="text" id="newWalletName" placeholder="Wallet Name" maxlength="30" />
-            <button type="button" class="primary" id="btnCreateNamed">Create</button>
-          </div>
-        </div>
-
-        <code id="walletIdDisplay" hidden></code>
+        <pre class="log" id="log"></pre>
+        <!-- hidden legacy hooks kept for renderer compatibility -->
+        <span id="walletIdDisplay" hidden></span>
+        <span id="stBal" hidden></span>
+        <span id="stImmature" hidden></span>
+        <span id="stIbd" hidden></span>
+        <button id="btnCreateWallet" hidden></button>
+        <select id="walletSelect" hidden></select>
+        <span id="remoteBadge" hidden></span>
+        <span id="nodeBadge" hidden></span>
+        <span id="dotNode" hidden></span>
+        <span id="dotMine" hidden></span>
+        <span id="stMining" hidden></span>
+        <span id="lastAddr" hidden></span>
       </div>
-
-      <div class="action-group">
-        <h2>Mining</h2>
-        <div class="input-row">
-          <label for="mineN">Blocks</label>
-          <input type="number" id="mineN" min="1" max="100" value="1" />
-          <label for="mineAddr">Address</label>
-          <input type="text" id="mineAddr" placeholder="Auto-filled from wallet" />
-        </div>
-        <div class="btn-row">
-          <button type="button" class="accent" id="btnMine">Mine Once</button>
-          <button type="button" class="primary" id="btnAutoMine"><span class="btn-text">Start Auto Mining</span><span class="spinner" hidden></span></button>
-        </div>
-      </div>
-
-      <div class="action-group">
-        <h2>Send Coins</h2>
-        <div class="input-row">
-          <label for="sendTo">Recipient</label>
-          <input type="text" id="sendTo" placeholder="tsnrx1... address" />
-          <label for="sendAmount">Amount (SNRX)</label>
-          <input type="number" id="sendAmount" min="0.00000001" step="0.00000001" value="1" />
-        </div>
-        <div class="btn-row">
-          <button type="button" class="accent" id="btnSend">Send</button>
-        </div>
-      </div>
-    </section>
-
-    <section class="panel log-panel">
-      <h2>Activity Log</h2>
-      <pre class="log" id="log"></pre>
     </section>
 
   </div>
