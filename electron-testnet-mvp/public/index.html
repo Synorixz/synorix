@@ -58,7 +58,8 @@
     <!-- Receive panel -->
     <section class="panel slide" id="panelReceive" hidden>
       <div class="panel-head"><h2>Receive SNRX</h2><button class="x" id="closeReceive">&times;</button></div>
-      <p class="panel-hint">Share this address to receive coins.</p>
+      <p class="panel-hint">Share this address or QR to receive coins.</p>
+      <div class="qr-card"><div id="qrBox"></div></div>
       <div class="addr-box">
         <code id="recvAddr" class="addr-text">&mdash;</code>
         <button type="button" class="copy-btn" id="btnCopyAddr" title="Copy">&#128203;</button>
@@ -135,6 +136,7 @@
 
   </div>
   <div id="toastContainer"></div>
+  <script src="qrcode.min.js"></script>
   <script src="renderer.js"></script>
 </body>
 </html>

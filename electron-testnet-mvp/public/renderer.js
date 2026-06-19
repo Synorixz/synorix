@@ -41,6 +41,14 @@ function fmt(n) {
   return Number(a).toLocaleString('en-US') + '.' + (b.length < 2 ? (b + '00').slice(0, 2) : b);
 }
 
+function renderQR(addr) {
+  const box = $('qrBox'); if (!box) return;
+  box.innerHTML = '';
+  if (!addr || addr === '—' || typeof QRCode === 'undefined') { box.classList.add('empty'); return; }
+  box.classList.remove('empty');
+  try { new QRCode(box, { text: addr, width: 168, height: 168, colorDark: '#0a0b10', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M }); } catch {}
+}
+
 /* ---------- connection state ---------- */
 function setConn(state) {
   const dot = $('connDot'), txt = $('connText');
@@ -101,7 +109,7 @@ async function refreshWalletList() {
       b.addEventListener('click', () => switchWallet(w.id));
       menu.appendChild(b);
     }
-    if (winfo.address) $('recvAddr').textContent = winfo.address;
+    if (winfo.address) { $('recvAddr').textContent = winfo.address; if (!$('panelReceive').hidden) renderQR(winfo.address); }
   } catch {}
 }
 async function switchWallet(wid) {
@@ -160,7 +168,7 @@ $('walletChip').addEventListener('click', (e) => { e.stopPropagation(); const m 
 document.addEventListener('click', () => { $('walletMenu').hidden = true; });
 $('walletMenu').addEventListener('click', (e) => e.stopPropagation());
 $('btnOpenCreate').addEventListener('click', () => { $('walletMenu').hidden = true; openPanel('panelCreate'); });
-$('btnTabReceive').addEventListener('click', () => openPanel('panelReceive'));
+$('btnTabReceive').addEventListener('click', () => { openPanel('panelReceive'); renderQR($('recvAddr').textContent.trim()); });
 $('btnTabSend').addEventListener('click', () => openPanel('panelSend'));
 $('closeReceive').addEventListener('click', closeAllPanels);
 $('closeSend').addEventListener('click', closeAllPanels);
@@ -175,7 +183,7 @@ $('btnNewAddr').addEventListener('click', async () => {
   if (!(await rpcReady(r.synorixCliPath))) return;
   try {
     const addr = await window.synorix.walletNewAddress(r.synorixCliPath);
-    if (addr) { $('recvAddr').textContent = addr; if ($('mineAddr')) $('mineAddr').value = addr; showToast('New address ready', 'success'); }
+    if (addr) { $('recvAddr').textContent = addr; renderQR(addr); if ($('mineAddr')) $('mineAddr').value = addr; showToast('New address ready', 'success'); }
   } catch (e) { showToast(humanError(e), 'error'); }
 });
 
