@@ -7,8 +7,16 @@ premium web UI + JSON API to browse blocks, transactions and addresses.
 Config via env: SNRX_RPC (default http://127.0.0.1:9332), SNRX_RPC_USER,
 SNRX_RPC_PASS, SNRX_EXPLORER_PORT (default 3001), SNRX_NETWORK (label).
 """
-import json, os, base64, urllib.request, urllib.error
+import json, os, base64, threading, urllib.request, urllib.error
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+# Wallet-facing RPC methods the site's web wallet may call through /api/rpc.
+# Only read + broadcast — never wallet/key methods (the node holds no keys).
+WALLET_METHODS = {
+    "scantxoutset", "sendrawtransaction", "getblockcount", "getblockchaininfo",
+    "getrawtransaction", "getblockhash", "getblock", "getblockheader", "estimatesmartfee",
+}
+_scan_lock = threading.Lock()  # scantxoutset can only run one at a time on the node
 
 RPC_URL = os.environ.get('SNRX_RPC', 'http://127.0.0.1:9332')
 RPC_USER = os.environ.get('SNRX_RPC_USER', 'synorix')
@@ -148,6 +156,27 @@ class H(BaseHTTPRequestHandler):
         self.send_header('Content-Length', str(len(b)))
         self.end_headers()
         self.wfile.write(b)
+
+    def do_POST(self):
+        # Wallet RPC proxy: the web wallet calls this (server-side, via the site's
+        # /api/node). The node's RPC stays bound to localhost and its password
+        # never leaves the VPS.
+        try:
+            if self.path.split('?')[0] != '/api/rpc':
+                return self._send(404, json.dumps({'error': 'not found'}))
+            length = int(self.headers.get('Content-Length', 0) or 0)
+            body = json.loads(self.rfile.read(length) or b'{}')
+            method, params = body.get('method'), (body.get('params') or [])
+            if method not in WALLET_METHODS:
+                return self._send(400, json.dumps({'error': 'method not allowed'}))
+            if method == 'scantxoutset':
+                with _scan_lock:
+                    result = rpc(method, params)
+            else:
+                result = rpc(method, params)
+            return self._send(200, json.dumps({'result': result}))
+        except Exception as e:
+            return self._send(500, json.dumps({'error': str(e)}))
 
     def do_GET(self):
         try:
