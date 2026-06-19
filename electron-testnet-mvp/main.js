@@ -12,6 +12,7 @@ const os = require('os');
 const http = require('http');
 const https = require('https');
 const { spawn, execFile, execFileSync } = require('child_process');
+const ncwallet = require('./wallet/wallet-core');
 
 // ---------------------------------------------------------------------------
 // Sabitler
@@ -1379,6 +1380,91 @@ function createWindow() {
   });
   mainWindow.loadFile(path.join(__dirname, 'public', 'index.html'));
 }
+
+// ---------------------------------------------------------------------------
+// Non-custodial wallet (keys on device). Storage: synorix-wallets.json in userData.
+// The node is only a blockchain backend (scantxoutset / sendrawtransaction).
+// ---------------------------------------------------------------------------
+const NC_WALLETS_FILE = () => path.join(app.getPath('userData'), 'synorix-wallets.json');
+const NC_DEFAULT_NETWORK = process.env.SYNORIX_NETWORK || 'testnet';
+
+function ncLoad() {
+  try {
+    const raw = require('fs').readFileSync(NC_WALLETS_FILE(), 'utf8');
+    const j = JSON.parse(raw);
+    if (!Array.isArray(j.wallets)) j.wallets = [];
+    if (!j.network) j.network = NC_DEFAULT_NETWORK;
+    return j;
+  } catch { return { wallets: [], activeId: '', network: NC_DEFAULT_NETWORK }; }
+}
+function ncSave(store) {
+  try { require('fs').writeFileSync(NC_WALLETS_FILE(), JSON.stringify(store, null, 2), { mode: 0o600 }); } catch (e) { /* best effort */ }
+}
+function ncActiveMeta(store, id) {
+  const wid = id || store.activeId;
+  return store.wallets.find((w) => w.id === wid) || store.wallets.find((w) => w.id === store.activeId) || store.wallets[0] || null;
+}
+const ncRpc = (method, params = []) => rpcCall(method, params);
+
+ipcMain.handle('nc:state', () => {
+  const s = ncLoad();
+  return {
+    network: s.network,
+    activeId: s.activeId,
+    hasWallets: s.wallets.length > 0,
+    wallets: s.wallets.map((w) => ({ id: w.id, name: w.name, network: w.network })),
+  };
+});
+
+ipcMain.handle('nc:create', (_e, { name, password }) => {
+  if (!password || String(password).length < 6) throw new Error('Password must be at least 6 characters.');
+  const s = ncLoad();
+  const { meta, mnemonic } = ncwallet.createWallet(name, password, s.network);
+  s.wallets.push(meta); s.activeId = meta.id; ncSave(s);
+  return { ok: true, id: meta.id, name: meta.name, mnemonic }; // mnemonic shown once for backup
+});
+
+ipcMain.handle('nc:restore', (_e, { name, mnemonic, password }) => {
+  if (!password || String(password).length < 6) throw new Error('Password must be at least 6 characters.');
+  const s = ncLoad();
+  const { meta } = ncwallet.restoreWallet(name, mnemonic, password, s.network);
+  s.wallets.push(meta); s.activeId = meta.id; ncSave(s);
+  return { ok: true, id: meta.id, name: meta.name };
+});
+
+ipcMain.handle('nc:switch', (_e, { id }) => {
+  const s = ncLoad();
+  if (s.wallets.some((w) => w.id === id)) { s.activeId = id; ncSave(s); return { ok: true, id }; }
+  throw new Error('Wallet not found.');
+});
+
+ipcMain.handle('nc:receiveAddress', (_e, { id } = {}) => {
+  const s = ncLoad(); const meta = ncActiveMeta(s, id);
+  if (!meta) throw new Error('No wallet.');
+  return { ok: true, address: ncwallet.firstReceiveAddress(meta), name: meta.name, id: meta.id };
+});
+
+ipcMain.handle('nc:balance', async (_e, { id } = {}) => {
+  const s = ncLoad(); const meta = ncActiveMeta(s, id);
+  if (!meta) return { spendable: 0, immature: 0, total: 0, noWallet: true };
+  try { return await ncwallet.getBalance(meta, ncRpc); }
+  catch (e) { return { spendable: 0, immature: 0, total: 0, error: String(e && e.message) }; }
+});
+
+ipcMain.handle('nc:reveal', (_e, { id, password } = {}) => {
+  const s = ncLoad(); const meta = ncActiveMeta(s, id);
+  if (!meta) throw new Error('No wallet.');
+  if (!ncwallet.checkPassword(meta, password)) throw new Error('Wrong password.');
+  return { ok: true, mnemonic: ncwallet.revealMnemonic(meta, password) };
+});
+
+ipcMain.handle('nc:send', async (_e, { id, password, to, amount } = {}) => {
+  const s = ncLoad(); const meta = ncActiveMeta(s, id);
+  if (!meta) throw new Error('No wallet.');
+  if (!ncwallet.checkPassword(meta, password)) throw new Error('Wrong password.');
+  const out = await ncwallet.send(meta, password, String(to).trim(), Number(amount), ncRpc, { feeRate: 1 });
+  return { ok: true, ...out };
+});
 
 app.whenReady().then(() => {
   try {

@@ -49,4 +49,14 @@ contextBridge.exposeInMainWorld('synorix', {
 
   miningGenerate: (synorixCliPath, nblocks, address) =>
     ipcRenderer.invoke('mining:generatetoaddress', { synorixCliPath, nblocks, address }),
+
+  // ---- Non-custodial wallet (keys on device) ----
+  ncState: () => ipcRenderer.invoke('nc:state'),
+  ncCreate: (name, password) => ipcRenderer.invoke('nc:create', { name, password }),
+  ncRestore: (name, mnemonic, password) => ipcRenderer.invoke('nc:restore', { name, mnemonic, password }),
+  ncSwitch: (id) => ipcRenderer.invoke('nc:switch', { id }),
+  ncReceiveAddress: (id) => ipcRenderer.invoke('nc:receiveAddress', { id }),
+  ncBalance: (id) => ipcRenderer.invoke('nc:balance', { id }),
+  ncReveal: (id, password) => ipcRenderer.invoke('nc:reveal', { id, password }),
+  ncSend: (id, password, to, amount) => ipcRenderer.invoke('nc:send', { id, password, to, amount }),
 });

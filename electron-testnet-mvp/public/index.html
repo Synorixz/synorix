@@ -10,129 +10,129 @@
 <body>
   <div class="app">
 
-    <!-- Top bar -->
-    <header class="topbar">
-      <div class="brand">
-        <span class="logo">S</span>
-        <span class="brand-name">Synorix</span>
-      </div>
-      <div class="topbar-right">
-        <span id="netPill" class="net-pill">Testnet</span>
-        <span class="conn" id="conn" title="Connecting">
-          <span class="conn-dot" id="connDot"></span>
-          <span class="conn-text" id="connText">Connecting</span>
-        </span>
-      </div>
-    </header>
+    <!-- ===== Onboarding (no wallets) ===== -->
+    <section id="onboarding" class="onboarding" hidden>
+      <div class="logo big">S</div>
+      <h1 class="ob-title">Synorix Wallet</h1>
+      <p class="ob-sub">Your coins, your keys.<br/>Stored only on this device — no one else can touch them.</p>
+      <button class="primary-btn" id="obCreate">Create New Wallet</button>
+      <button class="ghost-btn wide" id="obRestore">Restore from Recovery Phrase</button>
+    </section>
 
-    <!-- Balance hero -->
-    <section class="hero">
-      <div class="wallet-switch">
-        <button type="button" class="wallet-chip" id="walletChip">
-          <span class="wallet-chip-name" id="activeWalletName">My Wallet</span>
-          <span class="wallet-chip-caret">&#9662;</span>
-        </button>
-        <div class="wallet-menu" id="walletMenu" hidden>
-          <div class="wallet-menu-list" id="walletMenuList"></div>
-          <button type="button" class="wallet-menu-new" id="btnOpenCreate">+ New Wallet</button>
+    <!-- ===== Wallet view ===== -->
+    <div id="walletView" hidden>
+      <header class="topbar">
+        <div class="brand"><span class="logo">S</span><span class="brand-name">Synorix</span></div>
+        <div class="topbar-right">
+          <span id="netPill" class="net-pill">Testnet</span>
+          <span class="conn"><span class="conn-dot" id="connDot"></span><span class="conn-text" id="connText">…</span></span>
         </div>
-      </div>
+      </header>
 
-      <div class="balance">
-        <span class="balance-amount" id="balAmount">0.00</span>
-        <span class="balance-unit">SNRX</span>
-      </div>
-      <div class="balance-sub" id="balImmature"></div>
-    </section>
-
-    <!-- Primary actions -->
-    <section class="actions-primary">
-      <button type="button" class="action-btn receive" id="btnTabReceive">
-        <span class="action-ic">&#8595;</span><span>Receive</span>
-      </button>
-      <button type="button" class="action-btn send" id="btnTabSend">
-        <span class="action-ic">&#8593;</span><span>Send</span>
-      </button>
-    </section>
-
-    <!-- Receive panel -->
-    <section class="panel slide" id="panelReceive" hidden>
-      <div class="panel-head"><h2>Receive SNRX</h2><button class="x" id="closeReceive">&times;</button></div>
-      <p class="panel-hint">Share this address or QR to receive coins.</p>
-      <div class="qr-card"><div id="qrBox"></div></div>
-      <div class="addr-box">
-        <code id="recvAddr" class="addr-text">&mdash;</code>
-        <button type="button" class="copy-btn" id="btnCopyAddr" title="Copy">&#128203;</button>
-      </div>
-      <button type="button" class="ghost-btn" id="btnNewAddr">Generate new address</button>
-    </section>
-
-    <!-- Send panel -->
-    <section class="panel slide" id="panelSend" hidden>
-      <div class="panel-head"><h2>Send SNRX</h2><button class="x" id="closeSend">&times;</button></div>
-      <label class="field-label">Recipient address</label>
-      <input type="text" id="sendTo" class="field" placeholder="snrx1... / tsnrx1..." />
-      <label class="field-label">Amount (SNRX)</label>
-      <input type="number" id="sendAmount" class="field" min="0.00000001" step="0.00000001" placeholder="0.00" />
-      <button type="button" class="primary-btn" id="btnSend">Send Coins</button>
-      <p class="panel-hint small" id="sendHint">Mining rewards need 100 confirmations before they can be spent.</p>
-    </section>
-
-    <!-- Create wallet panel -->
-    <section class="panel slide" id="panelCreate" hidden>
-      <div class="panel-head"><h2>New Wallet</h2><button class="x" id="closeCreate">&times;</button></div>
-      <label class="field-label">Wallet name</label>
-      <input type="text" id="newWalletName" class="field" maxlength="30" placeholder="e.g. Savings" />
-      <button type="button" class="primary-btn" id="btnCreateNamed">Create Wallet</button>
-    </section>
-
-    <!-- Transactions -->
-    <section class="tx-section">
-      <div class="tx-head"><h2>Activity</h2></div>
-      <div class="tx-list" id="txList">
-        <div class="tx-empty">No transactions yet</div>
-      </div>
-    </section>
-
-    <!-- Advanced (collapsible) -->
-    <section class="advanced">
-      <button type="button" class="advanced-toggle" id="advToggle">Advanced &#9662;</button>
-      <div class="advanced-body" id="advBody" hidden>
-        <div class="adv-stats">
-          <div class="adv-stat"><span>Block height</span><b id="stBlocks">&mdash;</b></div>
-          <div class="adv-stat"><span>Peers</span><b id="stPeers">&mdash;</b></div>
-          <div class="adv-stat"><span>Node</span><b id="stNodeRun">&mdash;</b></div>
-        </div>
-        <div class="adv-mining">
-          <div class="adv-row">
-            <input type="number" id="mineN" min="1" max="100" value="1" class="field mini" />
-            <input type="text" id="mineAddr" class="field" placeholder="mining address (auto)" />
-          </div>
-          <div class="adv-row">
-            <button type="button" class="ghost-btn" id="btnMine">Mine Once</button>
-            <button type="button" class="ghost-btn" id="btnAutoMine"><span class="btn-text">Auto Mine</span><span class="spinner" hidden></span></button>
+      <section class="hero">
+        <div class="wallet-switch">
+          <button type="button" class="wallet-chip" id="walletChip">
+            <span class="wallet-chip-name" id="activeWalletName">Wallet</span>
+            <span class="wallet-chip-caret">&#9662;</span>
+          </button>
+          <div class="wallet-menu" id="walletMenu" hidden>
+            <div class="wallet-menu-list" id="walletMenuList"></div>
+            <button type="button" class="wallet-menu-new" id="menuNewWallet">+ New Wallet</button>
+            <button type="button" class="wallet-menu-new" id="menuRestore">Restore Wallet</button>
           </div>
         </div>
-        <div class="adv-node-btns">
-          <button type="button" class="ghost-btn" id="btnStartNode">Reconnect</button>
-          <button type="button" class="ghost-btn" id="btnStopNode">Disconnect</button>
+        <div class="balance"><span class="balance-amount" id="balAmount">0.00</span><span class="balance-unit">SNRX</span></div>
+        <div class="balance-sub" id="balImmature"></div>
+      </section>
+
+      <section class="actions-primary">
+        <button type="button" class="action-btn receive" id="btnTabReceive"><span class="action-ic">&#8595;</span><span>Receive</span></button>
+        <button type="button" class="action-btn send" id="btnTabSend"><span class="action-ic">&#8593;</span><span>Send</span></button>
+      </section>
+
+      <!-- Receive -->
+      <section class="panel slide" id="panelReceive" hidden>
+        <div class="panel-head"><h2>Receive SNRX</h2><button class="x" id="closeReceive">&times;</button></div>
+        <p class="panel-hint">Share this address or QR to receive coins.</p>
+        <div class="qr-card"><div id="qrBox"></div></div>
+        <div class="addr-box"><code id="recvAddr" class="addr-text">&mdash;</code><button type="button" class="copy-btn" id="btnCopyAddr">&#128203;</button></div>
+      </section>
+
+      <!-- Send -->
+      <section class="panel slide" id="panelSend" hidden>
+        <div class="panel-head"><h2>Send SNRX</h2><button class="x" id="closeSend">&times;</button></div>
+        <label class="field-label">Recipient address</label>
+        <input type="text" id="sendTo" class="field" placeholder="snrx1… / tsnrx1…" />
+        <label class="field-label">Amount (SNRX)</label>
+        <input type="number" id="sendAmount" class="field" min="0.00000001" step="0.00000001" placeholder="0.00" />
+        <label class="field-label">Wallet password</label>
+        <input type="password" id="sendPass" class="field" placeholder="to sign the transaction" />
+        <button type="button" class="primary-btn" id="btnSend">Send Coins</button>
+        <p class="panel-hint small">Signed locally on your device. Mining rewards mature after 100 blocks.</p>
+      </section>
+
+      <!-- Settings / backup -->
+      <section class="advanced">
+        <button type="button" class="advanced-toggle" id="advToggle">Settings &#9662;</button>
+        <div class="advanced-body" id="advBody" hidden>
+          <button type="button" class="ghost-btn wide" id="btnBackup">Show Recovery Phrase</button>
+          <p class="panel-hint small">Your 12-word recovery phrase is the ONLY way to restore this wallet. Never share it.</p>
         </div>
-        <pre class="log" id="log"></pre>
-        <!-- hidden legacy hooks kept for renderer compatibility -->
-        <span id="walletIdDisplay" hidden></span>
-        <span id="stBal" hidden></span>
-        <span id="stImmature" hidden></span>
-        <span id="stIbd" hidden></span>
-        <button id="btnCreateWallet" hidden></button>
-        <select id="walletSelect" hidden></select>
-        <span id="remoteBadge" hidden></span>
-        <span id="nodeBadge" hidden></span>
-        <span id="dotNode" hidden></span>
-        <span id="dotMine" hidden></span>
-        <span id="stMining" hidden></span>
-        <span id="lastAddr" hidden></span>
+      </section>
+    </div>
+
+    <!-- ===== Modals ===== -->
+    <div class="modal" id="modalCreate" hidden>
+      <div class="modal-card">
+        <div class="panel-head"><h2>Create Wallet</h2><button class="x" data-close>&times;</button></div>
+        <label class="field-label">Wallet name</label>
+        <input type="text" id="cName" class="field" maxlength="30" placeholder="e.g. Main" />
+        <label class="field-label">Password (encrypts your keys on this device)</label>
+        <input type="password" id="cPass" class="field" placeholder="min 6 characters" />
+        <label class="field-label">Confirm password</label>
+        <input type="password" id="cPass2" class="field" placeholder="repeat password" />
+        <button type="button" class="primary-btn" id="cSubmit">Create</button>
       </div>
-    </section>
+    </div>
+
+    <div class="modal" id="modalBackup" hidden>
+      <div class="modal-card">
+        <div class="panel-head"><h2>Your Recovery Phrase</h2></div>
+        <p class="panel-hint">Write these 12 words down in order and keep them safe. They are the ONLY way to recover your wallet. Never share them.</p>
+        <div class="mnemonic-grid" id="mnemonicGrid"></div>
+        <button type="button" class="ghost-btn wide" id="bCopy">Copy phrase</button>
+        <label class="check"><input type="checkbox" id="bConfirm" /> I have safely written down my recovery phrase</label>
+        <button type="button" class="primary-btn" id="bDone" disabled>Done</button>
+      </div>
+    </div>
+
+    <div class="modal" id="modalRestore" hidden>
+      <div class="modal-card">
+        <div class="panel-head"><h2>Restore Wallet</h2><button class="x" data-close>&times;</button></div>
+        <label class="field-label">Wallet name</label>
+        <input type="text" id="rName" class="field" maxlength="30" placeholder="e.g. Recovered" />
+        <label class="field-label">Recovery phrase (12 words)</label>
+        <textarea id="rPhrase" class="field" rows="3" placeholder="word1 word2 …"></textarea>
+        <label class="field-label">New password</label>
+        <input type="password" id="rPass" class="field" placeholder="min 6 characters" />
+        <button type="button" class="primary-btn" id="rSubmit">Restore</button>
+      </div>
+    </div>
+
+    <div class="modal" id="modalReveal" hidden>
+      <div class="modal-card">
+        <div class="panel-head"><h2>Recovery Phrase</h2><button class="x" data-close>&times;</button></div>
+        <div id="revealStep1">
+          <label class="field-label">Enter your password</label>
+          <input type="password" id="revPass" class="field" placeholder="wallet password" />
+          <button type="button" class="primary-btn" id="revSubmit">Reveal</button>
+        </div>
+        <div id="revealStep2" hidden>
+          <div class="mnemonic-grid" id="revealGrid"></div>
+          <button type="button" class="ghost-btn wide" id="revCopy">Copy phrase</button>
+        </div>
+      </div>
+    </div>
 
   </div>
   <div id="toastContainer"></div>
