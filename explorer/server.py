@@ -62,6 +62,82 @@ def address_detail(addr):
     return {'address': addr, 'balance': res.get('total_amount', 0), 'utxos': res.get('unspents', []), 'txouts': res.get('txouts', 0)}
 
 
+# ---------------------------------------------------------------------------
+# AMM (constant-product x*y=k) — Synorix priced against a USDT reserve.
+# State (reserves) persists to disk; price moves as swaps execute. This module
+# is the PRICING layer; actual fund movement (Tron/SNRX hot wallets) is added
+# in a later phase and verified on testnet first.
+# ---------------------------------------------------------------------------
+AMM_STATE = os.environ.get('SNRX_AMM_STATE', '/root/synorix-amm-state.json')
+AMM_FEE = float(os.environ.get('SNRX_AMM_FEE', '0.003'))   # 0.3%
+AMM_ADMIN = os.environ.get('SNRX_AMM_ADMIN', '')           # token to set reserves
+_amm_lock = threading.Lock()
+
+
+def amm_load():
+    try:
+        with open(AMM_STATE) as f:
+            s = json.load(f)
+        return {'usdt': float(s.get('usdt', 0)), 'snrx': float(s.get('snrx', 0))}
+    except Exception:
+        # testnet demo defaults so a price shows before real reserves are set
+        return {'usdt': 50.0, 'snrx': 500000.0}
+
+
+def amm_save(s):
+    with open(AMM_STATE, 'w') as f:
+        json.dump(s, f)
+
+
+def amm_price():
+    s = amm_load()
+    price = (s['usdt'] / s['snrx']) if s['snrx'] > 0 else 0
+    return {'price': price, 'usdt_reserve': s['usdt'], 'snrx_reserve': s['snrx'], 'fee': AMM_FEE}
+
+
+EXEC_URL = os.environ.get('SNRX_EXEC_URL', 'http://127.0.0.1:3002')  # SNRX executor
+
+
+def exec_call(path, payload):
+    req = urllib.request.Request(EXEC_URL + path, data=json.dumps(payload).encode(),
+                                 headers={'Content-Type': 'application/json'})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        return json.loads(r.read())
+
+
+def amm_fulfill_buy(usdt_amount, snrx_address):
+    # USDT received -> price the trade, pay SNRX from the reserve, move the price.
+    with _amm_lock:
+        s = amm_load()
+        q = amm_quote('buy', usdt_amount)
+        snrx_out = round(q['snrx_out'], 8)
+        res = exec_call('/send', {'to': snrx_address, 'amount': snrx_out})
+        if res.get('error'):
+            raise RuntimeError('SNRX payout failed: ' + res['error'])
+        amm_save({'usdt': s['usdt'] + float(usdt_amount), 'snrx': s['snrx'] - snrx_out})
+        return {'ok': True, 'txid': res.get('txid'), 'snrx_out': snrx_out, 'new_price': amm_price()['price']}
+
+
+def amm_quote(side, amount):
+    s = amm_load()
+    u, x = s['usdt'], s['snrx']
+    k = u * x
+    amount = float(amount)
+    if amount <= 0 or u <= 0 or x <= 0:
+        raise ValueError('invalid amount or empty reserves')
+    if side == 'buy':       # USDT in -> SNRX out
+        ain = amount * (1 - AMM_FEE)
+        snrx_out = x - k / (u + ain)
+        new_price = (u + amount) / (x - snrx_out)
+        return {'side': 'buy', 'usdt_in': amount, 'snrx_out': snrx_out, 'price': u / x, 'new_price': new_price}
+    elif side == 'sell':    # SNRX in -> USDT out
+        ain = amount * (1 - AMM_FEE)
+        usdt_out = u - k / (x + ain)
+        new_price = (u - usdt_out) / (x + amount)
+        return {'side': 'sell', 'snrx_in': amount, 'usdt_out': usdt_out, 'price': u / x, 'new_price': new_price}
+    raise ValueError('side must be buy or sell')
+
+
 HTML = r'''<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Synorix Explorer</title><style>
@@ -162,19 +238,38 @@ class H(BaseHTTPRequestHandler):
         # /api/node). The node's RPC stays bound to localhost and its password
         # never leaves the VPS.
         try:
-            if self.path.split('?')[0] != '/api/rpc':
-                return self._send(404, json.dumps({'error': 'not found'}))
+            p = self.path.split('?')[0]
             length = int(self.headers.get('Content-Length', 0) or 0)
             body = json.loads(self.rfile.read(length) or b'{}')
-            method, params = body.get('method'), (body.get('params') or [])
-            if method not in WALLET_METHODS:
-                return self._send(400, json.dumps({'error': 'method not allowed'}))
-            if method == 'scantxoutset':
-                with _scan_lock:
+
+            if p == '/api/rpc':
+                method, params = body.get('method'), (body.get('params') or [])
+                if method not in WALLET_METHODS:
+                    return self._send(400, json.dumps({'error': 'method not allowed'}))
+                if method == 'scantxoutset':
+                    with _scan_lock:
+                        result = rpc(method, params)
+                else:
                     result = rpc(method, params)
-            else:
-                result = rpc(method, params)
-            return self._send(200, json.dumps({'result': result}))
+                return self._send(200, json.dumps({'result': result}))
+
+            if p == '/api/amm/quote':
+                return self._send(200, json.dumps(amm_quote(body.get('side'), body.get('amount'))))
+
+            if p == '/api/amm/setreserves':
+                if not AMM_ADMIN or body.get('token') != AMM_ADMIN:
+                    return self._send(403, json.dumps({'error': 'forbidden'}))
+                with _amm_lock:
+                    amm_save({'usdt': float(body.get('usdt', 0)), 'snrx': float(body.get('snrx', 0))})
+                return self._send(200, json.dumps({'ok': True, **amm_price()}))
+
+            if p == '/api/amm/fulfill-buy':
+                # called by the Tron deposit watcher (admin-only) when USDT arrives
+                if not AMM_ADMIN or body.get('token') != AMM_ADMIN:
+                    return self._send(403, json.dumps({'error': 'forbidden'}))
+                return self._send(200, json.dumps(amm_fulfill_buy(float(body.get('usdt_amount', 0)), body.get('snrx_address'))))
+
+            return self._send(404, json.dumps({'error': 'not found'}))
         except Exception as e:
             return self._send(500, json.dumps({'error': str(e)}))
 
@@ -194,6 +289,8 @@ class H(BaseHTTPRequestHandler):
                 return self._send(200, json.dumps(tx_detail(p.split('/api/tx/')[1])))
             if p.startswith('/api/address/'):
                 return self._send(200, json.dumps(address_detail(p.split('/api/address/')[1])))
+            if p == '/api/amm/price':
+                return self._send(200, json.dumps(amm_price()))
             return self._send(404, json.dumps({'error': 'not found'}))
         except Exception as e:
             return self._send(500, json.dumps({'error': str(e)}))
