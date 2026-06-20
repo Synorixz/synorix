@@ -122,6 +122,13 @@ struct Params {
     bool fPowNoRetargeting;
     int64_t nPowTargetSpacing;
     int64_t nPowTargetTimespan;
+    /** If true, use the LWMA-1 per-block difficulty algorithm instead of the
+     *  Bitcoin interval retarget. Suited to small chains: difficulty responds
+     *  to hashrate within a few blocks, keeping block spacing near target and
+     *  preventing fast minting of the supply. */
+    bool fLwmaPow{false};
+    /** LWMA averaging window N (number of recent blocks). */
+    int64_t nLwmaAveragingWindow{90};
     std::chrono::seconds PowTargetSpacing() const
     {
         return std::chrono::seconds{nPowTargetSpacing};

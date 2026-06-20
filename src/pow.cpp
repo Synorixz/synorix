@@ -11,9 +11,72 @@
 #include <uint256.h>
 #include <util/check.h>
 
+#include <algorithm>
+
+// LWMA-1 difficulty algorithm (Zawy, MIT). Per-block retarget tuned for small
+// chains: it weights the most recent N block solvetimes and adjusts difficulty
+// every block, so hashrate that joins the network is matched within a handful of
+// blocks. This keeps block spacing near the target and makes it impossible to
+// mint the supply far faster than the intended emission schedule.
+unsigned int LwmaGetNextWorkRequired(const CBlockIndex* pindexLast, const Consensus::Params& params)
+{
+    const int64_t T = params.nPowTargetSpacing;
+    const int64_t N = params.nLwmaAveragingWindow;
+    const int64_t k = N * (N + 1) * T / 2;
+    const int64_t height = pindexLast->nHeight;
+    const arith_uint256 powLimit = UintToArith256(params.powLimit);
+
+    // Until there are N blocks of history, mine at the minimum difficulty.
+    if (height < N) {
+        return powLimit.GetCompact();
+    }
+
+    arith_uint256 sumTarget, nextTarget;
+    int64_t thisTimestamp, previousTimestamp;
+    int64_t t = 0, j = 0;
+
+    const CBlockIndex* blockPreviousTimestamp = pindexLast->GetAncestor(height - N);
+    previousTimestamp = blockPreviousTimestamp->GetBlockTime();
+
+    // Loop through the N most recent blocks.
+    for (int64_t i = height - N + 1; i <= height; i++) {
+        const CBlockIndex* block = pindexLast->GetAncestor(i);
+        // Enforce monotonic timestamps so out-of-order timestamps can't produce
+        // negative solvetimes that would corrupt the average.
+        thisTimestamp = (block->GetBlockTime() > previousTimestamp) ? block->GetBlockTime() : previousTimestamp + 1;
+        int64_t solvetime = std::min(6 * T, thisTimestamp - previousTimestamp);
+        previousTimestamp = thisTimestamp;
+
+        j++;
+        t += solvetime * j; // weight recent solvetimes more heavily
+
+        arith_uint256 target;
+        target.SetCompact(block->nBits);
+        sumTarget += target / (k * N); // scaled to avoid overflow
+    }
+
+    // Floor the weighted solvetime so difficulty can't drop more than ~3x at once.
+    if (t < k / 3) {
+        t = k / 3;
+    }
+
+    nextTarget = t * sumTarget;
+    if (nextTarget > powLimit) {
+        nextTarget = powLimit;
+    }
+
+    return nextTarget.GetCompact();
+}
+
 unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params)
 {
     assert(pindexLast != nullptr);
+
+    // Small-chain difficulty: per-block LWMA retarget.
+    if (params.fLwmaPow) {
+        return LwmaGetNextWorkRequired(pindexLast, params);
+    }
+
     unsigned int nProofOfWorkLimit = UintToArith256(params.powLimit).GetCompact();
 
     // Only change once per difficulty adjustment interval
@@ -89,6 +152,12 @@ unsigned int CalculateNextWorkRequired(const CBlockIndex* pindexLast, int64_t nF
 bool PermittedDifficultyTransition(const Consensus::Params& params, int64_t height, uint32_t old_nbits, uint32_t new_nbits)
 {
     if (params.fPowAllowMinDifficultyBlocks) return true;
+
+    // Under LWMA difficulty changes every block, so the interval-based bounds
+    // below don't apply. This is only a cheap headers-presync DoS heuristic;
+    // the authoritative rule is the exact GetNextWorkRequired match enforced in
+    // ContextualCheckBlockHeader, so accepting here is safe.
+    if (params.fLwmaPow) return true;
 
     if (height % params.DifficultyAdjustmentInterval() == 0) {
         int64_t smallest_timespan = params.nPowTargetTimespan/4;

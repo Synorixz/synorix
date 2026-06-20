@@ -84,11 +84,15 @@ public:
         // Synorix mainnet PoW limit: target corresponding to compact nBits 0x1e0ffff0
         // (Litecoin difficulty-1 level). Genesis is mined to satisfy this real target.
         consensus.powLimit = uint256{"00000ffff0000000000000000000000000000000000000000000000000000000"};
-        consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
+        consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks (legacy retarget; unused under LWMA)
         consensus.nPowTargetSpacing = 2.5 * 60;
         consensus.fPowAllowMinDifficultyBlocks = false;
         consensus.enforce_BIP94 = false;
         consensus.fPowNoRetargeting = false;
+        // Per-block LWMA difficulty: keeps spacing near 2.5 min even as hashrate
+        // joins, so the 21M supply emits on schedule and can't be fast-mined.
+        consensus.fLwmaPow = true;
+        consensus.nLwmaAveragingWindow = 90;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = Consensus::BIP9Deployment::NEVER_ACTIVE;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
@@ -104,11 +108,12 @@ public:
          * The characters are rarely used upper ASCII, not valid as UTF-8, and produce
          * a large 32-bit integer with any alignment.
          */
-        // Synorix mainnet network magic (distinct from Bitcoin to avoid cross-network contamination).
-        pchMessageStart[0] = 0xc7;
-        pchMessageStart[1] = 0x9b;
-        pchMessageStart[2] = 0x53;
-        pchMessageStart[3] = 0xe1;
+        // Synorix mainnet network magic. Bumped at the LWMA relaunch so nodes on the
+        // pre-LWMA chain (old magic c79b53e1) cannot cross-contaminate the new network.
+        pchMessageStart[0] = 0xc8;
+        pchMessageStart[1] = 0x9c;
+        pchMessageStart[2] = 0x54;
+        pchMessageStart[3] = 0xe2;
         nDefaultPort = 9333;
         nPruneAfterHeight = 100000;
         m_assumed_blockchain_size = 1;
